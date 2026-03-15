@@ -3,52 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-User WhatsApp Chat Generator</title>
-    
+    <title>Chat-Generator</title>
+
     <style>
         :root {
-            /* Farbpalette basierend auf der Analyse */
+            /* Editor-Farben */
             --editor-bg: #f0f2f5;
             --editor-card-bg: #ffffff;
             --editor-section-bg: #f8fafc;
             --primary-text: #333;
             --secondary-text: #475569;
-            --header-text-color: #1e3a8a; /* Für wichtige Überschriften */
-            
+            --header-text-color: #1e3a8a;
+
             /* Button-Farben */
-            --primary-action-color: #1e3a8a;       /* Blau */
+            --primary-action-color: #1e3a8a;
             --primary-action-hover: #172554;
-            --secondary-action-color: #10b981;     /* Grün */
+            --secondary-action-color: #10b981;
             --secondary-action-hover: #059669;
-            --tertiary-action-color: #173a79;      /* Dunkelblau */
-            --tertiary-action-hover: #172554;      /* Angepasster Hover-Effekt */
-            
-            --edit-color: #f59e0b;                 /* Orange */
-            --delete-color: #ef4444;               /* Rot */
+            --tertiary-action-color: #173a79;
+            --tertiary-action-hover: #172554;
+            --edit-color: #f59e0b;
+            --delete-color: #ef4444;
             --delete-hover: #dc2626;
-            --cancel-color: #64748b;               /* Grau-Blau */
+            --cancel-color: #64748b;
             --cancel-hover: #475569;
             --disabled-color: #9ca3af;
 
-            /* Farben für die Chat-Simulation (unverändert) */
+            /* Chat-Vorschau Variablen (durch Themes überschrieben) */
             --phone-bg: #e5ddd5;
             --phone-bg-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARMAAAARCAYAAAA/IaxpAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAB5JREFUeNrs2AEBAAAAwqD1T20ND6AAAAAAAAAA4NcAqQABBgBFcgAB2e4u/QAAAABJRU5ErkJggg==');
             --bubble-outgoing: #dcf8c6;
+            --bubble-outgoing-text: #111111;
             --bubble-incoming: #ffffff;
+            --bubble-incoming-text: #111111;
             --bubble-comment: #fffbe6;
+            --bubble-radius: 8px;
+            --chat-header-bg: #f0f2f5;
+            --chat-header-text: #172554;
+            --sender-name-color: #0284c7;
         }
 
-        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background-color: var(--editor-bg); color: var(--primary-text); margin: 0; padding: 20px; box-sizing: border-box; }
-        .editor-wrapper { max-width: 900px; margin: 0 auto; }
-        .editor-section { background-color: var(--editor-card-bg); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: opacity 0.3s; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--editor-bg);
+            color: var(--primary-text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .editor-wrapper { max-width: 960px; margin: 0 auto; }
+        .editor-wrapper > h1 { color: var(--header-text-color); margin-bottom: 1.5rem; }
+
+        /* Zwei-Spalten-Layout */
+        .main-layout { display: grid; grid-template-columns: 1fr; gap: 0; }
+
+        @media (min-width: 1100px) {
+            .editor-wrapper { max-width: 1380px; }
+            .main-layout { grid-template-columns: 1fr 440px; gap: 2rem; align-items: start; }
+            .preview-col { position: sticky; top: 20px; }
+        }
+
+        .editor-section {
+            background-color: var(--editor-card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: opacity 0.3s;
+        }
         .editor-section.disabled { opacity: 0.5; pointer-events: none; }
-        .editor-section h2, .editor-section h3 { color: var(--header-text-color); border-bottom: 2px solid var(--editor-bg); padding-bottom: 10px; margin-top: 0; }
+        .editor-section h2, .editor-section h3 {
+            color: var(--header-text-color);
+            border-bottom: 2px solid var(--editor-bg);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
         label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-        input[type="text"], select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 0.95rem; box-sizing: border-box; margin-bottom: 1rem; }
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
         textarea { resize: vertical; min-height: 80px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; align-items: end; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; align-items: end; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        
+
         button, .file-label {
             padding: 10px 15px;
             border: none;
@@ -59,14 +103,8 @@
             transition: all 0.2s;
             text-align: center;
         }
-        
-        .file-label {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        /* --- Button-Stile --- */
+        .file-label { display: flex; align-items: center; justify-content: center; }
+
         .primary-btn { background-color: var(--primary-action-color); color: white; }
         .primary-btn:hover:not(:disabled) { background-color: var(--primary-action-hover); }
         .primary-btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; }
@@ -76,37 +114,106 @@
 
         .tertiary-btn { background-color: var(--tertiary-action-color); color: white; }
         .tertiary-btn:hover { background-color: var(--tertiary-action-hover); }
-        
+
         .action-btn { padding: 5px 10px; font-size: 0.8rem; border-radius: 5px; color: white; margin-left: 5px; }
         .delete-btn { background-color: var(--delete-color); }
         .delete-btn:hover { background-color: var(--delete-hover); }
-        
         .edit-btn { background-color: var(--edit-color); }
-        
         .cancel-btn { background-color: var(--cancel-color); color: white; }
         .cancel-btn:hover { background-color: var(--cancel-hover); }
 
-        .hidden { display: none; }
-        
-        .user-list-item { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid var(--editor-bg); }
+        .hidden { display: none !important; }
+
+        /* Inline-Formular für Datum/Kommentar */
+        .inline-form {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            background: var(--editor-section-bg);
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            animation: slideDown 0.2s ease;
+        }
+        .inline-form input[type="text"] {
+            flex: 1;
+            margin-bottom: 0;
+            padding: 8px 10px;
+        }
+        .inline-form button {
+            padding: 8px 14px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Teilnehmer-Liste */
+        .user-list-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid var(--editor-bg);
+        }
         .user-list-item:last-child { border-bottom: none; }
         .user-list-item img { width: 40px; height: 40px; border-radius: 50%; margin-right: 15px; object-fit: cover; }
         .user-list-item span { flex-grow: 1; font-weight: bold; }
-        
-        /* --- Vorschau-Stile --- */
-        #chat-preview-container { background-color: var(--phone-bg); background-image: var(--phone-bg-image); border: 1px solid #ddd; padding: 1.5rem; border-radius: 8px; min-height: 300px; max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; }
-        #chat-header { padding-bottom: 1rem; margin-bottom: 1rem; border-bottom: 1px solid rgba(0,0,0,0.1); text-align: center; }
-        #chat-header h2 { margin: 0; color: #172554; }
-        #chat-body { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; overflow-y: auto; }
-        .draggable-item { cursor: move; transition: all 0.2s ease; }
-        .message-item { display: flex; max-width: 80%; width: fit-content; position: relative; align-items: flex-end; gap: 10px; }
-        .message-actions { position: absolute; top: 50%; transform: translateY(-50%); right: -45px; display: none; gap: 5px; z-index: 10; }
-        
-        .message-item.outgoing .message-actions {
-            right: auto;
-            left: -45px; 
+
+        /* Vorschau */
+        #chat-preview-container {
+            background-color: var(--phone-bg);
+            background-image: var(--phone-bg-image);
+            border: 1px solid #ddd;
+            padding: 0;
+            border-radius: 12px;
+            min-height: 400px;
+            max-width: 420px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.12);
         }
-        
+        #chat-header {
+            background-color: var(--chat-header-bg);
+            padding: 14px 1rem;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            text-align: center;
+            flex-shrink: 0;
+        }
+        #chat-header h2 { margin: 0; color: var(--chat-header-text); font-size: 1.1rem; }
+        #chat-body {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        /* Nachrichten */
+        .draggable-item { cursor: move; transition: all 0.2s ease; }
+        .message-item {
+            display: flex;
+            max-width: 80%;
+            width: fit-content;
+            position: relative;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .message-actions {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: -90px;
+            display: none;
+            gap: 4px;
+            z-index: 10;
+        }
+        .message-item.outgoing .message-actions { right: auto; left: -90px; }
         .draggable-item:hover .message-actions { display: flex; }
 
         .message-action-btn {
@@ -120,161 +227,515 @@
             transition: transform 0.1s ease;
             color: white;
         }
-        .message-action-btn:active {
-            transform: scale(0.95);
-        }
-        
-        /* --- NEUER Stil für Inline-Editing --- */
+        .message-action-btn:active { transform: scale(0.95); }
+
         .inline-editing {
             outline: 2px solid var(--edit-color);
             border-radius: 4px;
             background-color: rgba(255, 255, 255, 0.9);
             padding: 2px 4px;
-            margin: -2px -4px; /* Kompensiert das Padding */
+            margin: -2px -4px;
         }
-        /* --- Ende NEUER Stil --- */
 
         .message-item.outgoing { align-self: flex-end; }
         .message-item.incoming { align-self: flex-start; }
-        .bubble { padding: 7px 12px; border-radius: 8px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); line-height: 1.4; }
-        .bubble .message-text { white-space: pre-wrap; word-wrap: break-word; font-size: 0.95rem; }
-        .bubble.outgoing { background-color: var(--bubble-outgoing); }
-        .bubble.incoming { background-color: var(--bubble-incoming); }
-        .sender-name { font-size: 0.85rem; font-weight: bold; color: #0284c7; margin-bottom: 4px; }
-        .date-separator, .comment-bubble { align-self: center; background-color: #e1f2fb; color: #57829b; font-size: 0.8rem; font-weight: 500; padding: 4px 10px; border-radius: 8px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); margin: 10px 0; position: relative; }
-        .comment-bubble { background-color: var(--bubble-comment); color: #92400e; border: 1px solid #fde68a; width: 95%; text-align: center; font-style: italic; }
-        .chat-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; visibility: hidden; }
+
+        .bubble {
+            padding: 7px 12px;
+            border-radius: var(--bubble-radius);
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            line-height: 1.4;
+        }
+        .bubble .message-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 0.92rem;
+        }
+        .bubble.outgoing {
+            background-color: var(--bubble-outgoing);
+            color: var(--bubble-outgoing-text);
+        }
+        .bubble.incoming {
+            background-color: var(--bubble-incoming);
+            color: var(--bubble-incoming-text);
+        }
+        .sender-name {
+            font-size: 0.82rem;
+            font-weight: bold;
+            color: var(--sender-name-color);
+            margin-bottom: 3px;
+        }
+        .date-separator, .comment-bubble {
+            align-self: center;
+            background-color: #e1f2fb;
+            color: #57829b;
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 8px;
+            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            margin: 8px 0;
+            position: relative;
+        }
+        .comment-bubble {
+            background-color: var(--bubble-comment);
+            color: #92400e;
+            border: 1px solid #fde68a;
+            width: 95%;
+            text-align: center;
+            font-style: italic;
+        }
+        .chat-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; visibility: hidden; }
         .message-item.show-avatar .chat-avatar { visibility: visible; }
         .dragging { opacity: 0.4; }
         .drag-over-top { border-top: 2px solid var(--edit-color); }
         .drag-over-bottom { border-bottom: 2px solid var(--edit-color); }
-        .import-format { background: var(--editor-section-bg); border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; line-height: 1.6; color: var(--primary-text); }
+
+        .import-format {
+            background: var(--editor-section-bg);
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85em;
+            line-height: 1.6;
+        }
+
+        /* Theme-Selector */
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+        }
+        @media (max-width: 600px) {
+            .theme-selector { grid-template-columns: repeat(3, 1fr); }
+        }
+        .theme-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 6px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #333;
+            transition: all 0.2s;
+        }
+        .theme-btn:hover { border-color: #94a3b8; transform: translateY(-1px); }
+        .theme-btn.active {
+            border-color: var(--primary-action-color);
+            background: #eff6ff;
+            box-shadow: 0 0 0 3px rgba(30,58,138,0.12);
+        }
+        .theme-colors {
+            display: flex;
+            gap: 4px;
+        }
+        .theme-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.15);
+        }
+        .theme-name { font-size: 0.72rem; text-align: center; line-height: 1.2; }
+
+        /* Darstellungsoptionen */
+        .display-mode-options { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+        .display-mode-options label { display: flex; align-items: center; gap: 6px; font-weight: 500; cursor: pointer; margin-bottom: 0; }
+
+        /* Toast-Benachrichtigungen */
+        #toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            padding: 10px 18px;
+            border-radius: 8px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            animation: toastIn 0.3s ease, toastOut 0.3s ease 2.2s forwards;
+            max-width: 280px;
+        }
+        .toast.success { background-color: #10b981; }
+        .toast.error { background-color: #ef4444; }
+        .toast.info { background-color: #3b82f6; }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(12px); }
+        }
     </style>
 </head>
 <body>
 
-    <div class="editor-wrapper">
-        <!-- Der Rest des HTML bleibt unverändert -->
-        <h1>Multi-User WhatsApp Chat Generator</h1>
+<div class="editor-wrapper">
+    <h1>Chat-Generator</h1>
 
-        <div id="import-section" class="editor-section">
-            <h3>Import Chat from File</h3>
-            <p>Laden Sie einen kompletten Chat aus einer <code>.txt</code> oder <code>.csv</code>-Datei. Dies überschreibt den aktuellen Chat.</p>
-            <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem;">
-                <input type="file" id="import-file-input" accept=".txt,.csv" style="display: none;">
-                <label for="import-file-input" class="file-label tertiary-btn">Datei wählen</label>
-                <span id="import-filename" style="flex-grow: 1; color: var(--secondary-text); font-style: italic;">Keine Datei gewählt.</span>
-                <button id="import-btn" class="primary-btn" disabled style="flex-shrink: 0; width: auto;">Importieren</button>
-            </div>
-            <details>
-                <summary style="cursor: pointer; font-weight: bold;">Anleitung zum Dateiformat anzeigen</summary>
-                <div class="import-format" style="margin-top: 1rem;">
-                    <strong># Format</strong><br>
-                    <code>TITLE: Ihr Chat-Titel</code><br>
-                    <code>USER: NameDesTeilnehmers</code><br>
-                    <code>--- Text für Datums-Trenner ---</code><br>
-                    <code>COMMENT: Ihr Kommentartext</code><br>
-                    <code>AbsenderName: Text der Nachricht</code><br>
-                    <code>AbsenderName: IMAGE: http://link.zum/bild.png</code>
+    <div class="main-layout">
+
+        <!-- Linke Spalte: Editor -->
+        <div class="editor-col">
+
+            <!-- Import (kollabierbar) -->
+            <details id="import-details">
+                <summary style="cursor: pointer; font-weight: bold; padding: 1.25rem 1.5rem; background: var(--editor-card-bg); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); list-style: none; display: flex; align-items: center; gap: 8px; margin-bottom: 1.5rem; color: var(--header-text-color);">
+                    <span style="font-size: 1.1rem;">&#8595;</span> Chat aus Datei importieren
+                </summary>
+                <div id="import-section" class="editor-section" style="margin-top: -1rem; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+                    <p style="margin-top: 0; color: var(--secondary-text);">Laden Sie einen kompletten Chat aus einer <code>.txt</code> oder <code>.csv</code>-Datei. Dies überschreibt den aktuellen Chat.</p>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                        <input type="file" id="import-file-input" accept=".txt,.csv" style="display: none;">
+                        <label for="import-file-input" class="file-label tertiary-btn" style="flex-shrink: 0;">Datei wählen</label>
+                        <span id="import-filename" style="flex-grow: 1; color: var(--secondary-text); font-style: italic; font-size: 0.9rem;">Keine Datei gewählt.</span>
+                        <button id="import-btn" class="primary-btn" disabled style="flex-shrink: 0;">Importieren</button>
+                    </div>
+                    <details>
+                        <summary style="cursor: pointer; font-weight: bold; font-size: 0.9rem;">Dateiformat anzeigen</summary>
+                        <div class="import-format" style="margin-top: 0.75rem;">
+                            <strong># Format</strong><br>
+                            <code>TITLE: Ihr Chat-Titel</code><br>
+                            <code>USER: NameDesTeilnehmers</code><br>
+                            <code>--- Text für Datums-Trenner ---</code><br>
+                            <code>COMMENT: Ihr Kommentartext</code><br>
+                            <code>AbsenderName: Text der Nachricht</code><br>
+                            <code>AbsenderName: IMAGE: http://link.zum/bild.png</code>
+                        </div>
+                    </details>
                 </div>
             </details>
-        </div>
 
-        <div id="user-editor-section" class="editor-section">
-            <h3>1. Chat-Titel</h3>
-            <input type="text" id="chat-title-input" placeholder="z.B. Projektgruppe oder Name des Chatpartners">
-        </div>
+            <!-- 1. Chat-Titel -->
+            <div id="user-editor-section" class="editor-section">
+                <h3>1. Chat-Titel</h3>
+                <input type="text" id="chat-title-input" placeholder="z.B. Projektgruppe oder Name des Chatpartners" style="margin-bottom: 0;">
+            </div>
 
-        <div id="user-add-section" class="editor-section">
-            <h3>2. Teilnehmer hinzufügen</h3>
-            <div class="grid-2" style="grid-template-columns: 1fr auto;">
-                <div><label for="new-user-name">Name des Teilnehmers</label><input type="text" id="new-user-name" placeholder="z.B. Anna"></div>
-                <div style="display:flex; flex-direction:column; gap: 5px; justify-content: flex-end;">
-                    <button id="add-user-btn" class="secondary-btn">Hinzufügen</button>
-                    <button id="cancel-user-edit-btn" class="cancel-btn hidden">Abbrechen</button>
+            <!-- 2. Teilnehmer -->
+            <div id="user-add-section" class="editor-section">
+                <h3>2. Teilnehmer hinzufügen</h3>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end; margin-bottom: 0.5rem;">
+                    <div>
+                        <label for="new-user-name">Name des Teilnehmers</label>
+                        <input type="text" id="new-user-name" placeholder="z.B. Anna" style="margin-bottom: 0;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <button id="add-user-btn" class="secondary-btn">Hinzufügen</button>
+                        <button id="cancel-user-edit-btn" class="cancel-btn hidden">Abbrechen</button>
+                    </div>
+                </div>
+                <div style="margin-top: 0.75rem;">
+                    <input type="file" id="new-user-pic" accept="image/*" style="display:none">
+                    <label for="new-user-pic" class="file-label tertiary-btn" style="width: 100%;">Profilbild wählen (optional)</label>
+                </div>
+                <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Bestehende Teilnehmer:</h4>
+                <div id="user-list-container"><p style="color: var(--secondary-text); font-style: italic; margin: 0;">Noch keine Teilnehmer hinzugefügt.</p></div>
+            </div>
+
+            <!-- 3. Nachrichten -->
+            <div id="message-editor-section" class="editor-section" style="display: none;">
+                <h3>3. Chat-Verlauf erstellen</h3>
+
+                <!-- Button-Leiste -->
+                <div id="message-creation-controls" class="grid-3" style="margin-bottom: 0.75rem;">
+                    <button id="add-date-btn" class="tertiary-btn">📅 Datum</button>
+                    <button id="add-comment-btn" class="tertiary-btn">💬 Kommentar</button>
+                    <div style="display: contents;">
+                        <input type="file" id="add-image-input" accept="image/*" style="display:none">
+                        <label for="add-image-input" class="file-label tertiary-btn" style="width: 100%; box-sizing: border-box;">🖼 Bild</label>
+                    </div>
+                </div>
+
+                <!-- Inline-Formular: Datum -->
+                <div id="date-inline-form" class="inline-form hidden">
+                    <input type="text" id="date-text-input" placeholder="z.B. HEUTE, 15. März 2025">
+                    <button id="submit-date-btn" class="primary-btn">Einfügen</button>
+                    <button id="cancel-date-btn" class="cancel-btn">✕</button>
+                </div>
+
+                <!-- Inline-Formular: Kommentar -->
+                <div id="comment-inline-form" class="inline-form hidden">
+                    <input type="text" id="comment-text-input" placeholder="Kommentartext eingeben...">
+                    <button id="submit-comment-btn" class="primary-btn">Einfügen</button>
+                    <button id="cancel-comment-btn" class="cancel-btn">✕</button>
+                </div>
+
+                <!-- Textnachricht -->
+                <label for="sender-select" style="margin-top: 0.75rem;">Absender</label>
+                <select id="sender-select" style="margin-bottom: 0.75rem;"></select>
+                <label for="message-text">Nachricht <span style="font-size: 0.8rem; color: var(--secondary-text); font-weight: 400;">(Strg+Enter zum Senden)</span></label>
+                <textarea id="message-text" placeholder="Nachrichtentext eingeben..."></textarea>
+                <div style="display: flex; gap: 10px; margin-top: 0.5rem;">
+                    <button id="add-message-btn" class="primary-btn" style="flex: 1;">Textnachricht hinzufügen</button>
+                    <button id="cancel-message-edit-btn" class="cancel-btn hidden">Abbrechen</button>
                 </div>
             </div>
-             <div><label>Profilbild (optional)</label><input type="file" id="new-user-pic" accept="image/*" style="display:none"><label for="new-user-pic" class="file-label tertiary-btn" style="width: 100%; box-sizing: border-box;">Bild wählen</label></div>
-            <h4 style="margin-top: 2rem;">Bestehende Teilnehmer:</h4>
-            <div id="user-list-container"><p>Noch keine Teilnehmer hinzugefügt.</p></div>
-        </div>
 
-        <div id="message-editor-section" class="editor-section" style="display: none;">
-            <h3>3. Chat-Verlauf erstellen</h3>
-            <div id="message-creation-controls" class="grid-3" style="margin-bottom: 1rem;">
-                <button id="add-date-btn" class="tertiary-btn">Datum einfügen</button>
-                <button id="add-comment-btn" class="tertiary-btn">Kommentar einfügen</button>
-                <div style="display: contents;"><input type="file" id="add-image-input" accept="image/*" style="display:none"><label for="add-image-input" class="file-label tertiary-btn" style="width: 100%; box-sizing:border-box">Bild hinzufügen</label></div>
+            <!-- Arbeitsfläche verwalten -->
+            <div class="editor-section">
+                <h3>Arbeitsfläche verwalten</h3>
+                <button id="clear-workspace-btn" class="delete-btn" style="width: 100%;">🗑 Arbeitsfläche leeren</button>
             </div>
-            <label for="sender-select">Absender der Nachricht</label>
-            <select id="sender-select" style="margin-bottom: 1rem;"></select>
-            <label for="message-text">Nachrichtentext</label>
-            <textarea id="message-text"></textarea>
-            <div style="display: flex; gap: 10px; margin-top: 1rem;">
-                <button id="add-message-btn" class="primary-btn">Textnachricht hinzufügen</button>
-                <button id="cancel-message-edit-btn" class="cancel-btn hidden">Abbrechen</button>
-            </div>
-        </div>
-        
-        <div class="editor-section">
-            <h2>Vorschau</h2>
-            <div id="chat-preview-container">
-                <header id="chat-header"><h2 id="preview-chat-title">Chat</h2></header>
-                <main id="chat-body"><p style="text-align: center; color: #666;">Füge Teilnehmer und Nachrichten hinzu, um die Vorschau zu sehen.</p></main>
-            </div>
-        </div>
 
-        <div class="editor-section">
-            <h3>4. Darstellungsoptionen</h3>
-            <div><input type="radio" id="mode-static" name="display-mode" value="static" checked><label for="mode-static" style="display: inline-block; margin-right: 20px;"><b>Statische Ansicht</b></label></div>
-            <div><input type="radio" id="mode-animated" name="display-mode" value="animated"><label for="mode-animated" style="display: inline-block;"><b>Animierte Ansicht</b></label></div>
-        </div>
+        </div><!-- /.editor-col -->
 
-        <!-- ======================================================= -->
-        <!-- NEUER ABSCHNITT FÜR "ARBEITSFLÄCHE LEEREN" -->
-        <!-- ======================================================= -->
-        <div class="editor-section">
-            <h3>Arbeitsfläche verwalten</h3>
-            <button id="clear-workspace-btn" class="delete-btn" style="width: 100%;">Arbeitsfläche leeren</button>
-        </div>
-        <!-- ======================================================= -->
-        
-        <div class="editor-section" style="text-align: center;">
-             <h3>5. Finale Chat-Datei generieren</h3>
-             <button id="final-generate-btn" class="primary-btn" style="font-size: 1.2rem; padding: 15px;">Herunterladen</button>
-        </div>
-    </div>
+
+        <!-- Rechte Spalte: Vorschau + Optionen + Download -->
+        <div class="preview-col">
+
+            <!-- Vorschau -->
+            <div class="editor-section" style="padding: 1.25rem;">
+                <h2 style="margin-bottom: 1rem;">Vorschau</h2>
+                <div id="chat-preview-container">
+                    <header id="chat-header"><h2 id="preview-chat-title">Chat</h2></header>
+                    <main id="chat-body">
+                        <p style="text-align: center; color: #888; font-size: 0.9rem; padding: 2rem 0;">Füge Teilnehmer und Nachrichten hinzu, um die Vorschau zu sehen.</p>
+                    </main>
+                </div>
+            </div>
+
+            <!-- Darstellungsoptionen -->
+            <div class="editor-section">
+                <h3>4. Darstellungsoptionen</h3>
+
+                <label style="margin-bottom: 0.75rem;">Messenger-Stil:</label>
+                <div class="theme-selector">
+                    <button class="theme-btn active" data-theme="whatsapp">
+                        <div class="theme-colors">
+                            <div class="theme-dot" style="background:#dcf8c6;"></div>
+                            <div class="theme-dot" style="background:#ffffff; border-color:#ddd;"></div>
+                        </div>
+                        <span class="theme-name">WhatsApp</span>
+                    </button>
+                    <button class="theme-btn" data-theme="imessage">
+                        <div class="theme-colors">
+                            <div class="theme-dot" style="background:#0b93f6;"></div>
+                            <div class="theme-dot" style="background:#e5e5ea;"></div>
+                        </div>
+                        <span class="theme-name">iMessage</span>
+                    </button>
+                    <button class="theme-btn" data-theme="signal">
+                        <div class="theme-colors">
+                            <div class="theme-dot" style="background:#3a76f0;"></div>
+                            <div class="theme-dot" style="background:#ffffff; border-color:#ddd;"></div>
+                        </div>
+                        <span class="theme-name">Signal</span>
+                    </button>
+                    <button class="theme-btn" data-theme="telegram">
+                        <div class="theme-colors">
+                            <div class="theme-dot" style="background:#effdde;"></div>
+                            <div class="theme-dot" style="background:#ffffff; border-color:#ddd;"></div>
+                        </div>
+                        <span class="theme-name">Telegram</span>
+                    </button>
+                    <button class="theme-btn" data-theme="dark">
+                        <div class="theme-colors">
+                            <div class="theme-dot" style="background:#005c4b;"></div>
+                            <div class="theme-dot" style="background:#1f2c34;"></div>
+                        </div>
+                        <span class="theme-name">Dark</span>
+                    </button>
+                </div>
+
+                <label style="margin-bottom: 0.5rem;">Animationsmodus:</label>
+                <div class="display-mode-options">
+                    <label><input type="radio" id="mode-static" name="display-mode" value="static" checked> Statische Ansicht</label>
+                    <label><input type="radio" id="mode-animated" name="display-mode" value="animated"> Animierte Ansicht</label>
+                </div>
+            </div>
+
+            <!-- Download -->
+            <div class="editor-section" style="text-align: center;">
+                <h3>5. Finale Chat-Datei generieren</h3>
+                <button id="final-generate-btn" class="primary-btn" style="font-size: 1.1rem; padding: 14px 28px; width: 100%;">⬇ Herunterladen</button>
+            </div>
+
+        </div><!-- /.preview-col -->
+
+    </div><!-- /.main-layout -->
+</div><!-- /.editor-wrapper -->
+
+<div id="toast-container"></div>
 
 <script>
 (function() {
-    const getEl = id => document.getElementById(id);
-    const elements = {
-        importSection: getEl('import-section'), userEditorSection: getEl('user-editor-section'),
-        userAddSection: getEl('user-add-section'), chatTitleInput: getEl('chat-title-input'),
-        newUserNameInput: getEl('new-user-name'), newUserPicInput: getEl('new-user-pic'),
-        addUserBtn: getEl('add-user-btn'), cancelUserEditBtn: getEl('cancel-user-edit-btn'),
-        userListContainer: getEl('user-list-container'), messageEditorSection: getEl('message-editor-section'),
-        messageCreationControls: getEl('message-creation-controls'), senderSelect: getEl('sender-select'),
-        messageText: getEl('message-text'),
-        addDateBtn: getEl('add-date-btn'), addCommentBtn: getEl('add-comment-btn'), addImageInput: getEl('add-image-input'),
-        addMessageBtn: getEl('add-message-btn'), cancelMessageEditBtn: getEl('cancel-message-edit-btn'),
-        generateBtn: getEl('final-generate-btn'), previewChatTitle: getEl('preview-chat-title'),
-        chatBody: getEl('chat-body'), importFileInput: getEl('import-file-input'),
-        importFilename: getEl('import-filename'), importBtn: getEl('import-btn'),
-        clearWorkspaceBtn: getEl('clear-workspace-btn'), // NEU hinzugefügt
+    // =====================================================================
+    // THEME-DEFINITIONEN
+    // =====================================================================
+    const THEMES = {
+        whatsapp: {
+            label: 'WhatsApp',
+            vars: {
+                '--phone-bg': '#e5ddd5',
+                '--phone-bg-image': "url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARMAAAARCAYAAAA/IaxpAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAB5JREFUeNrs2AEBAAAAwqD1T20ND6AAAAAAAAAA4NcAqQABBgBFcgAB2e4u/QAAAABJRU5ErkJggg==')",
+                '--bubble-outgoing': '#dcf8c6',
+                '--bubble-outgoing-text': '#111111',
+                '--bubble-incoming': '#ffffff',
+                '--bubble-incoming-text': '#111111',
+                '--bubble-radius': '8px',
+                '--chat-header-bg': '#f0f2f5',
+                '--chat-header-text': '#172554',
+                '--sender-name-color': '#0284c7',
+                '--bubble-comment': '#fffbe6',
+            }
+        },
+        imessage: {
+            label: 'iMessage',
+            vars: {
+                '--phone-bg': '#ffffff',
+                '--phone-bg-image': 'none',
+                '--bubble-outgoing': '#0b93f6',
+                '--bubble-outgoing-text': '#ffffff',
+                '--bubble-incoming': '#e5e5ea',
+                '--bubble-incoming-text': '#000000',
+                '--bubble-radius': '18px',
+                '--chat-header-bg': '#f2f2f7',
+                '--chat-header-text': '#000000',
+                '--sender-name-color': '#0b93f6',
+                '--bubble-comment': '#fff9c4',
+            }
+        },
+        signal: {
+            label: 'Signal',
+            vars: {
+                '--phone-bg': '#ececec',
+                '--phone-bg-image': 'none',
+                '--bubble-outgoing': '#3a76f0',
+                '--bubble-outgoing-text': '#ffffff',
+                '--bubble-incoming': '#ffffff',
+                '--bubble-incoming-text': '#111111',
+                '--bubble-radius': '12px',
+                '--chat-header-bg': '#2c6bed',
+                '--chat-header-text': '#ffffff',
+                '--sender-name-color': '#2c6bed',
+                '--bubble-comment': '#fff9c4',
+            }
+        },
+        telegram: {
+            label: 'Telegram',
+            vars: {
+                '--phone-bg': '#c8d5de',
+                '--phone-bg-image': 'none',
+                '--bubble-outgoing': '#effdde',
+                '--bubble-outgoing-text': '#111111',
+                '--bubble-incoming': '#ffffff',
+                '--bubble-incoming-text': '#111111',
+                '--bubble-radius': '12px',
+                '--chat-header-bg': '#517da2',
+                '--chat-header-text': '#ffffff',
+                '--sender-name-color': '#3e89c7',
+                '--bubble-comment': '#fff9c4',
+            }
+        },
+        dark: {
+            label: 'Dark Mode',
+            vars: {
+                '--phone-bg': '#0d1117',
+                '--phone-bg-image': 'none',
+                '--bubble-outgoing': '#005c4b',
+                '--bubble-outgoing-text': '#e9edef',
+                '--bubble-incoming': '#1f2c34',
+                '--bubble-incoming-text': '#e9edef',
+                '--bubble-radius': '8px',
+                '--chat-header-bg': '#202c33',
+                '--chat-header-text': '#e9edef',
+                '--sender-name-color': '#53bdeb',
+                '--bubble-comment': '#2a3942',
+            }
+        }
     };
 
-    let state = { title: "Chat", users: [], chatItems: [] };
+    // =====================================================================
+    // ELEMENT-REFERENZEN
+    // =====================================================================
+    const getEl = id => document.getElementById(id);
+    const elements = {
+        importSection:          getEl('import-section'),
+        userEditorSection:      getEl('user-editor-section'),
+        userAddSection:         getEl('user-add-section'),
+        chatTitleInput:         getEl('chat-title-input'),
+        newUserNameInput:       getEl('new-user-name'),
+        newUserPicInput:        getEl('new-user-pic'),
+        addUserBtn:             getEl('add-user-btn'),
+        cancelUserEditBtn:      getEl('cancel-user-edit-btn'),
+        userListContainer:      getEl('user-list-container'),
+        messageEditorSection:   getEl('message-editor-section'),
+        messageCreationControls:getEl('message-creation-controls'),
+        senderSelect:           getEl('sender-select'),
+        messageText:            getEl('message-text'),
+        addDateBtn:             getEl('add-date-btn'),
+        addCommentBtn:          getEl('add-comment-btn'),
+        addImageInput:          getEl('add-image-input'),
+        addMessageBtn:          getEl('add-message-btn'),
+        cancelMessageEditBtn:   getEl('cancel-message-edit-btn'),
+        generateBtn:            getEl('final-generate-btn'),
+        previewChatTitle:       getEl('preview-chat-title'),
+        chatBody:               getEl('chat-body'),
+        importFileInput:        getEl('import-file-input'),
+        importFilename:         getEl('import-filename'),
+        importBtn:              getEl('import-btn'),
+        clearWorkspaceBtn:      getEl('clear-workspace-btn'),
+        // Inline-Formulare Datum
+        dateInlineForm:         getEl('date-inline-form'),
+        dateTextInput:          getEl('date-text-input'),
+        submitDateBtn:          getEl('submit-date-btn'),
+        cancelDateBtn:          getEl('cancel-date-btn'),
+        // Inline-Formulare Kommentar
+        commentInlineForm:      getEl('comment-inline-form'),
+        commentTextInput:       getEl('comment-text-input'),
+        submitCommentBtn:       getEl('submit-comment-btn'),
+        cancelCommentBtn:       getEl('cancel-comment-btn'),
+        // Toast
+        toastContainer:         getEl('toast-container'),
+    };
+
+    let state = { title: 'Chat', users: [], chatItems: [], theme: 'whatsapp' };
     let editingState = null;
     let tempUserPicFile = null;
     let draggedItemIndex = null;
 
+    // =====================================================================
+    // INIT
+    // =====================================================================
     function init() {
+        loadFromLocalStorage();
+
         elements.chatTitleInput.addEventListener('keyup', handleStateChange);
         elements.addUserBtn.addEventListener('click', addOrUpdateUser);
         elements.cancelUserEditBtn.addEventListener('click', cancelEdit);
-        elements.addDateBtn.addEventListener('click', addDateSeparator);
-        elements.addCommentBtn.addEventListener('click', addComment);
+
+        // Datum/Kommentar: Toggle Inline-Formulare
+        elements.addDateBtn.addEventListener('click', toggleDateForm);
+        elements.addCommentBtn.addEventListener('click', toggleCommentForm);
+        elements.submitDateBtn.addEventListener('click', submitDateSeparator);
+        elements.cancelDateBtn.addEventListener('click', hideDateForm);
+        elements.submitCommentBtn.addEventListener('click', submitComment);
+        elements.cancelCommentBtn.addEventListener('click', hideCommentForm);
+
+        // Enter-Taste in Inline-Inputs
+        elements.dateTextInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') submitDateSeparator();
+            if (e.key === 'Escape') hideDateForm();
+        });
+        elements.commentTextInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') submitComment();
+            if (e.key === 'Escape') hideCommentForm();
+        });
+
         elements.addImageInput.addEventListener('change', addImageMessage);
         elements.addMessageBtn.addEventListener('click', addOrUpdateTextMessage);
         elements.cancelMessageEditBtn.addEventListener('click', cancelEdit);
@@ -282,32 +743,139 @@
         elements.importFileInput.addEventListener('change', handleFileSelect);
         elements.importBtn.addEventListener('click', importFromFile);
         elements.newUserPicInput.addEventListener('change', e => { tempUserPicFile = e.target.files[0]; });
-        elements.clearWorkspaceBtn.addEventListener('click', clearWorkspace); // NEU hinzugefügt
+        elements.clearWorkspaceBtn.addEventListener('click', clearWorkspace);
+
+        // Ctrl+Enter für Textarea
+        elements.messageText.addEventListener('keydown', e => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                addOrUpdateTextMessage();
+            }
+        });
+
+        // Theme-Buttons
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
+        });
+
         render();
+        applyTheme(state.theme, false); // false = kein save nötig beim Init
     }
 
-    // =======================================================
-    // NEUE FUNKTION ZUM LEEREN DER ARBEITSFLÄCHE
-    // =======================================================
-    function clearWorkspace() {
-        if (confirm('Sind Sie sicher, dass Sie die gesamte Arbeitsfläche leeren möchten? Diese Aktion kann nicht rückgängig gemacht werden.')) {
-            // Setzt den Zustand auf die Standardwerte zurück
-            state = { title: "Chat", users: [], chatItems: [] };
-            
-            // Bricht einen eventuellen Bearbeitungsmodus ab
-            cancelEdit();
-            
-            // Leert das Titelfeld
-            elements.chatTitleInput.value = '';
-            
-            // Rendert die Benutzeroberfläche neu, um den leeren Zustand anzuzeigen
-            render();
+    // =====================================================================
+    // THEMES
+    // =====================================================================
+    function applyTheme(themeName, save = true) {
+        if (!THEMES[themeName]) return;
+        const theme = THEMES[themeName];
+        const root = document.documentElement;
+        Object.entries(theme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+        state.theme = themeName;
+        document.querySelectorAll('.theme-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.theme === themeName);
+        });
+        if (save) saveToLocalStorage();
+    }
+
+    // =====================================================================
+    // LOCALSTORAGE
+    // =====================================================================
+    const LS_KEY = 'chatGeneratorState_v2';
+
+    function saveToLocalStorage() {
+        try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e) {}
+    }
+
+    function loadFromLocalStorage() {
+        try {
+            const saved = localStorage.getItem(LS_KEY);
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (parsed && parsed.users) {
+                    state = { title: 'Chat', users: [], chatItems: [], theme: 'whatsapp', ...parsed };
+                    elements.chatTitleInput.value = state.title;
+                    if (state.users.length > 0) showToast('Letzter Stand wiederhergestellt', 'info');
+                }
+            }
+        } catch(e) {}
+    }
+
+    // =====================================================================
+    // TOAST
+    // =====================================================================
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        elements.toastContainer.appendChild(toast);
+        setTimeout(() => toast.remove(), 2700);
+    }
+
+    // =====================================================================
+    // STATE
+    // =====================================================================
+    function handleStateChange() {
+        state.title = elements.chatTitleInput.value || 'Chat';
+        render();
+        saveToLocalStorage();
+    }
+
+    // =====================================================================
+    // DATUM / KOMMENTAR — Inline-Formulare
+    // =====================================================================
+    function toggleDateForm() {
+        const isHidden = elements.dateInlineForm.classList.contains('hidden');
+        hideDateForm();
+        hideCommentForm();
+        if (isHidden) {
+            elements.dateInlineForm.classList.remove('hidden');
+            elements.dateTextInput.focus();
         }
     }
-    // =======================================================
-    
-    function handleStateChange() { state.title = elements.chatTitleInput.value || "Chat"; render(); }
-    
+
+    function toggleCommentForm() {
+        const isHidden = elements.commentInlineForm.classList.contains('hidden');
+        hideDateForm();
+        hideCommentForm();
+        if (isHidden) {
+            elements.commentInlineForm.classList.remove('hidden');
+            elements.commentTextInput.focus();
+        }
+    }
+
+    function hideDateForm() {
+        elements.dateInlineForm.classList.add('hidden');
+        elements.dateTextInput.value = '';
+    }
+
+    function hideCommentForm() {
+        elements.commentInlineForm.classList.add('hidden');
+        elements.commentTextInput.value = '';
+    }
+
+    function submitDateSeparator() {
+        const text = elements.dateTextInput.value.trim();
+        if (!text) return;
+        state.chatItems.push({ type: 'date', text });
+        hideDateForm();
+        render();
+        saveToLocalStorage();
+        showToast('Datum eingefügt');
+    }
+
+    function submitComment() {
+        const text = elements.commentTextInput.value.trim();
+        if (!text) return;
+        state.chatItems.push({ type: 'comment', text });
+        hideCommentForm();
+        render();
+        saveToLocalStorage();
+        showToast('Kommentar eingefügt');
+    }
+
+    // =====================================================================
+    // TEILNEHMER
+    // =====================================================================
     function addOrUpdateUser() {
         const name = elements.newUserNameInput.value.trim();
         if (!name) return;
@@ -317,12 +885,23 @@
             if (!user) { cancelEdit(); return; }
             if (tempUserPicFile) {
                 const reader = new FileReader();
-                reader.onload = e => { user.name = name; user.pic = e.target.result; tempUserPicFile = null; cancelEdit(); };
+                reader.onload = e => {
+                    user.name = name; user.pic = e.target.result;
+                    tempUserPicFile = null; cancelEdit();
+                    showToast('Teilnehmer aktualisiert');
+                    saveToLocalStorage();
+                };
                 reader.readAsDataURL(tempUserPicFile);
-            } else { user.name = name; cancelEdit(); }
+            } else {
+                user.name = name; cancelEdit();
+                showToast('Teilnehmer aktualisiert');
+                saveToLocalStorage();
+            }
         } else {
-            if (state.users.some(u => u.name.toLowerCase() === name.toLowerCase())) { alert('Ein Teilnehmer mit diesem Namen existiert bereits.'); return; }
-            const user = { id: Date.now(), name: name };
+            if (state.users.some(u => u.name.toLowerCase() === name.toLowerCase())) {
+                showToast('Dieser Name existiert bereits.', 'error'); return;
+            }
+            const user = { id: Date.now(), name };
             if (tempUserPicFile) {
                 const reader = new FileReader();
                 reader.onload = e => { user.pic = e.target.result; finishAddingUser(user); };
@@ -331,82 +910,171 @@
         }
     }
 
-    function finishAddingUser(user) { state.users.push(user); elements.newUserNameInput.value = ''; elements.newUserPicInput.value = ''; tempUserPicFile = null; render(); }
+    function finishAddingUser(user) {
+        state.users.push(user);
+        elements.newUserNameInput.value = '';
+        elements.newUserPicInput.value = '';
+        tempUserPicFile = null;
+        render();
+        saveToLocalStorage();
+        showToast(`${user.name} hinzugefügt`);
+    }
+
     function startEditUser(userId) {
-        cancelEdit(); editingState = { type: 'user', id: userId };
-        const user = state.users.find(u => u.id === userId); if (!user) return;
+        cancelEdit();
+        editingState = { type: 'user', id: userId };
+        const user = state.users.find(u => u.id === userId);
+        if (!user) return;
         elements.newUserNameInput.value = user.name;
         elements.addUserBtn.textContent = 'Änderungen speichern';
         elements.cancelUserEditBtn.classList.remove('hidden');
         setEditingUI(true, 'user');
     }
-    function deleteUser(userId) { if (!confirm('Teilnehmer und alle Nachrichten löschen?')) return; state.users = state.users.filter(u => u.id !== userId); state.chatItems = state.chatItems.filter(item => 'userId' in item ? item.userId !== userId : true); render(); }
-    
+
+    function deleteUser(userId) {
+        if (!confirm('Teilnehmer und alle seine Nachrichten löschen?')) return;
+        const user = state.users.find(u => u.id === userId);
+        const name = user ? user.name : 'Teilnehmer';
+        state.users = state.users.filter(u => u.id !== userId);
+        state.chatItems = state.chatItems.filter(item => 'userId' in item ? item.userId !== userId : true);
+        render();
+        saveToLocalStorage();
+        showToast(`${name} gelöscht`, 'error');
+    }
+
+    // =====================================================================
+    // NACHRICHTEN
+    // =====================================================================
     function addOrUpdateTextMessage() {
-        const text = elements.messageText.value; if (!text.trim()) return;
+        const text = elements.messageText.value;
+        if (!text.trim()) return;
         if (editingState && editingState.type === 'message') {
             state.chatItems[editingState.index].text = text;
             state.chatItems[editingState.index].userId = parseInt(elements.senderSelect.value);
             cancelEdit();
+            showToast('Nachricht aktualisiert');
         } else {
             state.chatItems.push({ type: 'text', userId: parseInt(elements.senderSelect.value), text });
             elements.messageText.value = '';
+            showToast('Nachricht hinzugefügt');
         }
         render();
+        saveToLocalStorage();
     }
+
     function startEditMessage(index) {
         cancelEdit();
         const item = state.chatItems[index];
-        if (item.type !== 'text') { alert("Nur Textnachrichten können bearbeitet werden."); return; }
-        editingState = { type: 'message', index: index };
+        if (item.type !== 'text') { showToast('Nur Textnachrichten können bearbeitet werden.', 'error'); return; }
+        editingState = { type: 'message', index };
         elements.messageText.value = item.text;
         elements.senderSelect.value = item.userId;
         elements.addMessageBtn.textContent = 'Nachricht speichern';
         elements.cancelMessageEditBtn.classList.remove('hidden');
         setEditingUI(true, 'message');
+        elements.messageText.focus();
     }
+
     function cancelEdit() {
         editingState = null;
-        elements.newUserNameInput.value = ''; elements.newUserPicInput.value = ''; tempUserPicFile = null;
-        elements.addUserBtn.textContent = 'Hinzufügen'; elements.cancelUserEditBtn.classList.add('hidden');
+        elements.newUserNameInput.value = '';
+        elements.newUserPicInput.value = '';
+        tempUserPicFile = null;
+        elements.addUserBtn.textContent = 'Hinzufügen';
+        elements.cancelUserEditBtn.classList.add('hidden');
         elements.messageText.value = '';
         elements.addMessageBtn.textContent = 'Textnachricht hinzufügen';
         elements.cancelMessageEditBtn.classList.add('hidden');
         setEditingUI(false);
         render();
     }
-    
+
     function setEditingUI(isEditing, mode) {
         const sections = [elements.importSection, elements.userEditorSection, elements.userAddSection, elements.messageEditorSection];
-        sections.forEach(s => s.classList.remove('disabled'));
+        sections.forEach(s => { if (s) s.classList.remove('disabled'); });
         if (isEditing) {
-            if (mode === 'user') { elements.messageEditorSection.classList.add('disabled'); elements.importSection.classList.add('disabled'); }
-            else if (mode === 'message' || mode === 'comment') { elements.userAddSection.classList.add('disabled'); elements.importSection.classList.add('disabled'); elements.messageCreationControls.classList.add('disabled'); }
+            if (mode === 'user') {
+                elements.messageEditorSection.classList.add('disabled');
+                if (elements.importSection) elements.importSection.classList.add('disabled');
+            } else if (mode === 'message' || mode === 'comment') {
+                elements.userAddSection.classList.add('disabled');
+                if (elements.importSection) elements.importSection.classList.add('disabled');
+                elements.messageCreationControls.classList.add('disabled');
+            }
         }
     }
-    
-    function addDateSeparator() { const text = prompt("Datum oder Trenner eingeben:", "HEUTE"); if (text) { state.chatItems.push({ type: 'date', text }); render(); } }
-    function addComment() { const text = prompt("Kommentar eingeben:"); if (text) { state.chatItems.push({ type: 'comment', text }); render(); } }
+
     function addImageMessage(event) {
-        const file = event.target.files[0]; if (!file) return;
+        const file = event.target.files[0];
+        if (!file) return;
         const reader = new FileReader();
-        reader.onload = e => { state.chatItems.push({ type: 'image', userId: parseInt(elements.senderSelect.value), picDataUri: e.target.result }); render(); };
+        reader.onload = e => {
+            state.chatItems.push({ type: 'image', userId: parseInt(elements.senderSelect.value), picDataUri: e.target.result });
+            render();
+            saveToLocalStorage();
+            showToast('Bild hinzugefügt');
+        };
         reader.readAsDataURL(file);
         event.target.value = '';
     }
-    function deleteChatItem(index) { state.chatItems.splice(index, 1); render(); }
-    
-    function startEditComment(index) {
-        const item = state.chatItems[index];
-        const newText = prompt("Kommentar bearbeiten:", item.text);
-        if (newText !== null && newText.trim() !== "") { item.text = newText; render(); }
+
+    function deleteChatItem(index) {
+        state.chatItems.splice(index, 1);
+        render();
+        saveToLocalStorage();
+        showToast('Gelöscht', 'error');
     }
 
-    function handleFileSelect(event) { const file = event.target.files[0]; if (file) { elements.importFilename.textContent = file.name; elements.importBtn.disabled = false; } else { elements.importFilename.textContent = 'Keine Datei gewählt.'; elements.importBtn.disabled = true; } }
-    
+    function startEditComment(index) {
+        const item = state.chatItems[index];
+        // Nutze Inline-Formular für Kommentar-Bearbeitung
+        elements.commentInlineForm.classList.remove('hidden');
+        elements.commentTextInput.value = item.text;
+        elements.commentTextInput.focus();
+
+        // Temporär: Beim Absenden wird der bestehende Eintrag ersetzt
+        const originalSubmit = elements.submitCommentBtn.onclick;
+        elements.submitCommentBtn.onclick = () => {
+            const text = elements.commentTextInput.value.trim();
+            if (text) {
+                state.chatItems[index].text = text;
+                hideCommentForm();
+                render();
+                saveToLocalStorage();
+                showToast('Kommentar aktualisiert');
+            }
+            elements.submitCommentBtn.onclick = null; // Reset
+        };
+    }
+
+    // =====================================================================
+    // ARBEITSFLÄCHE LEEREN
+    // =====================================================================
+    function clearWorkspace() {
+        if (!confirm('Sind Sie sicher? Diese Aktion kann nicht rückgängig gemacht werden.')) return;
+        state = { title: 'Chat', users: [], chatItems: [], theme: state.theme };
+        cancelEdit();
+        elements.chatTitleInput.value = '';
+        hideDateForm();
+        hideCommentForm();
+        render();
+        saveToLocalStorage();
+        showToast('Arbeitsfläche geleert', 'info');
+    }
+
+    // =====================================================================
+    // IMPORT
+    // =====================================================================
+    function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) { elements.importFilename.textContent = file.name; elements.importBtn.disabled = false; }
+        else { elements.importFilename.textContent = 'Keine Datei gewählt.'; elements.importBtn.disabled = true; }
+    }
+
     function importFromFile() {
-        if (editingState) { alert('Bitte beenden Sie zuerst die aktuelle Bearbeitung.'); return; }
-        const file = elements.importFileInput.files[0]; if (!file) return;
+        if (editingState) { showToast('Bitte beenden Sie zuerst die Bearbeitung.', 'error'); return; }
+        const file = elements.importFileInput.files[0];
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
@@ -416,35 +1084,55 @@
                 if (newUsers.length === 0) throw new Error("Keine 'USER:'-Definitionen in der Datei gefunden.");
                 newUsers.forEach(u => u.pic = createDefaultAvatar(u.name));
                 const nameToIdMap = new Map(newUsers.map(u => [u.name, u.id]));
-                
-                const newChatItems = lines.filter(l => !l.startsWith('TITLE:') && !l.startsWith('USER:')).map(line => {
-                    if (line.match(/^--- (.*) ---$/)) return { type: 'date', text: line.match(/^--- (.*) ---$/)[1].trim() };
-                    if (line.match(/^COMMENT:(.*)/)) return { type: 'comment', text: line.match(/^COMMENT:(.*)/)[1].trim() };
-                    const messageMatch = line.match(/^([^:]+):(.*)/);
-                    if (messageMatch) {
-                        const senderName = messageMatch[1].trim(), content = messageMatch[2].trim(), userId = nameToIdMap.get(senderName);
-                        if (!userId) return null;
-                        if (content.startsWith('IMAGE:')) return { type: 'image', userId, picDataUri: content.substring(6).trim() };
-                        return { type: 'text', userId, text: content };
-                    }
-                    return null;
-                }).filter(Boolean);
 
-                state.title = newTitle; state.users = newUsers; state.chatItems = newChatItems;
+                const newChatItems = lines
+                    .filter(l => !l.startsWith('TITLE:') && !l.startsWith('USER:'))
+                    .map(line => {
+                        if (line.match(/^--- (.*) ---$/)) return { type: 'date', text: line.match(/^--- (.*) ---$/)[1].trim() };
+                        if (line.match(/^COMMENT:(.*)/)) return { type: 'comment', text: line.match(/^COMMENT:(.*)/)[1].trim() };
+                        const messageMatch = line.match(/^([^:]+):(.*)/);
+                        if (messageMatch) {
+                            const senderName = messageMatch[1].trim(), content = messageMatch[2].trim();
+                            const userId = nameToIdMap.get(senderName);
+                            if (!userId) return null;
+                            if (content.startsWith('IMAGE:')) return { type: 'image', userId, picDataUri: content.substring(6).trim() };
+                            return { type: 'text', userId, text: content };
+                        }
+                        return null;
+                    }).filter(Boolean);
+
+                state.title = newTitle;
+                state.users = newUsers;
+                state.chatItems = newChatItems;
                 elements.chatTitleInput.value = state.title;
-                alert('Chat erfolgreich importiert!'); render();
-            } catch (error) { alert('Fehler beim Importieren der Datei: ' + error.message); }
-            finally { elements.importFileInput.value = ''; elements.importFilename.textContent = 'Keine Datei gewählt.'; elements.importBtn.disabled = true; }
+                render();
+                saveToLocalStorage();
+                showToast('Chat erfolgreich importiert', 'success');
+            } catch (error) {
+                showToast('Fehler: ' + error.message, 'error');
+            } finally {
+                elements.importFileInput.value = '';
+                elements.importFilename.textContent = 'Keine Datei gewählt.';
+                elements.importBtn.disabled = true;
+            }
         };
         reader.readAsText(file);
     }
-    
+
+    // =====================================================================
+    // RENDER
+    // =====================================================================
     function render() {
-        elements.userListContainer.innerHTML = state.users.length === 0 ? '<p>Noch keine Teilnehmer hinzugefügt.</p>' : '';
-        if (state.users.length > 0) {
+        // Teilnehmer-Liste
+        elements.userListContainer.innerHTML = '';
+        if (state.users.length === 0) {
+            elements.userListContainer.innerHTML = '<p style="color: var(--secondary-text); font-style: italic; margin: 0;">Noch keine Teilnehmer hinzugefügt.</p>';
+            elements.messageEditorSection.style.display = 'none';
+        } else {
             elements.messageEditorSection.style.display = 'block';
             state.users.forEach(user => {
-                const item = document.createElement('div'); item.className = 'user-list-item';
+                const item = document.createElement('div');
+                item.className = 'user-list-item';
                 item.innerHTML = `<img src="${user.pic}" alt="${user.name}"><span>${user.name}</span>
                     <div>
                         <button class="action-btn edit-btn" onclick="startEditUser(${user.id})">✎</button>
@@ -452,43 +1140,88 @@
                     </div>`;
                 elements.userListContainer.appendChild(item);
             });
-        } else { elements.messageEditorSection.style.display = 'none'; }
-        
+        }
+
+        // Sender-Select
         const currentSender = elements.senderSelect.value;
         elements.senderSelect.innerHTML = state.users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
         elements.senderSelect.value = currentSender;
+
+        // Vorschau
         elements.previewChatTitle.textContent = state.title;
-        elements.chatBody.innerHTML = state.chatItems.length === 0 ? '<p style="text-align: center; color: #666;">Noch keine Nachrichten.</p>' : '';
-        if (state.chatItems.length > 0) {
+        elements.chatBody.innerHTML = '';
+        if (state.chatItems.length === 0) {
+            elements.chatBody.innerHTML = '<p style="text-align: center; color: #888; font-size: 0.9rem; padding: 2rem 0;">Noch keine Nachrichten.</p>';
+        } else {
             state.chatItems.forEach((item, index) => {
-                const el = createMessageElement(item, index, state); if (el) elements.chatBody.appendChild(el);
+                const el = createMessageElement(item, index, state);
+                if (el) elements.chatBody.appendChild(el);
             });
             addDragDropListeners();
         }
         elements.chatBody.scrollTop = elements.chatBody.scrollHeight;
     }
 
+    // =====================================================================
+    // DRAG & DROP
+    // =====================================================================
     function addDragDropListeners() {
         document.querySelectorAll('#chat-body > .draggable-item').forEach(item => {
-            item.addEventListener('dragstart', handleDragStart); item.addEventListener('dragover', handleDragOver);
-            item.addEventListener('dragleave', handleDragLeave); item.addEventListener('drop', handleDrop);
+            item.addEventListener('dragstart', handleDragStart);
+            item.addEventListener('dragover', handleDragOver);
+            item.addEventListener('dragleave', handleDragLeave);
+            item.addEventListener('drop', handleDrop);
             item.addEventListener('dragend', handleDragEnd);
         });
     }
 
-    function handleDragStart(e) { draggedItemIndex = parseInt(e.currentTarget.dataset.index); e.dataTransfer.effectAllowed = 'move'; setTimeout(() => e.currentTarget.classList.add('dragging'), 0); }
-    function handleDragOver(e) { e.preventDefault(); const target = e.currentTarget; if (parseInt(target.dataset.index) === draggedItemIndex) return; const rect = target.getBoundingClientRect(); if (e.clientY > rect.top + rect.height / 2) { target.classList.add('drag-over-bottom'); target.classList.remove('drag-over-top'); } else { target.classList.add('drag-over-top'); target.classList.remove('drag-over-bottom'); } }
+    function handleDragStart(e) {
+        draggedItemIndex = parseInt(e.currentTarget.dataset.index);
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => e.currentTarget.classList.add('dragging'), 0);
+    }
+    function handleDragOver(e) {
+        e.preventDefault();
+        const target = e.currentTarget;
+        if (parseInt(target.dataset.index) === draggedItemIndex) return;
+        const rect = target.getBoundingClientRect();
+        if (e.clientY > rect.top + rect.height / 2) {
+            target.classList.add('drag-over-bottom'); target.classList.remove('drag-over-top');
+        } else {
+            target.classList.add('drag-over-top'); target.classList.remove('drag-over-bottom');
+        }
+    }
     function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over-top', 'drag-over-bottom'); }
-    function handleDrop(e) { e.preventDefault(); const fromIndex = draggedItemIndex; const target = e.currentTarget; let toIndex = parseInt(target.dataset.index); const rect = target.getBoundingClientRect(); if (e.clientY > rect.top + rect.height / 2) toIndex++; if (fromIndex !== toIndex) { const [movedItem] = state.chatItems.splice(fromIndex, 1); state.chatItems.splice(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, movedItem); render(); } }
-    function handleDragEnd() { draggedItemIndex = null; document.querySelectorAll('.dragging, .drag-over-top, .drag-over-bottom').forEach(el => el.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom')); }
-    
+    function handleDrop(e) {
+        e.preventDefault();
+        const fromIndex = draggedItemIndex;
+        const target = e.currentTarget;
+        let toIndex = parseInt(target.dataset.index);
+        const rect = target.getBoundingClientRect();
+        if (e.clientY > rect.top + rect.height / 2) toIndex++;
+        if (fromIndex !== toIndex) {
+            const [movedItem] = state.chatItems.splice(fromIndex, 1);
+            state.chatItems.splice(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, movedItem);
+            render();
+            saveToLocalStorage();
+        }
+    }
+    function handleDragEnd() {
+        draggedItemIndex = null;
+        document.querySelectorAll('.dragging, .drag-over-top, .drag-over-bottom').forEach(el =>
+            el.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom'));
+    }
+
+    // =====================================================================
+    // INLINE-EDITING
+    // =====================================================================
     function enableInlineEditing(element, index) {
         if (document.querySelector('.inline-editing')) return;
         const originalText = state.chatItems[index].text;
         element.setAttribute('contenteditable', 'true');
         element.classList.add('inline-editing');
         element.focus();
-        
+
         const selection = window.getSelection();
         const range = document.createRange();
         range.selectNodeContents(element);
@@ -498,45 +1231,47 @@
         const finishEditing = (save) => {
             element.removeAttribute('contenteditable');
             element.classList.remove('inline-editing');
-            
             if (save) {
                 const newText = element.innerText.trim();
                 if (newText && newText !== originalText) {
                     state.chatItems[index].text = newText;
-                    render(); 
-                } else {
-                    element.innerText = originalText;
-                }
-            } else {
-                element.innerText = originalText;
-            }
+                    saveToLocalStorage();
+                    render();
+                } else { element.innerText = originalText; }
+            } else { element.innerText = originalText; }
             element.removeEventListener('blur', onBlur);
             element.removeEventListener('keydown', onKeyDown);
         };
 
         const onBlur = () => finishEditing(true);
         const onKeyDown = (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finishEditing(true); } 
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); finishEditing(true); }
             else if (e.key === 'Escape') { e.preventDefault(); finishEditing(false); }
         };
 
         element.addEventListener('blur', onBlur);
         element.addEventListener('keydown', onKeyDown);
     }
-    
+
+    // =====================================================================
+    // NACHRICHTEN-ELEMENT ERSTELLEN
+    // =====================================================================
     function createMessageElement(item, index, currentState) {
         let el;
         if (item.type === 'date' || item.type === 'comment') {
             el = document.createElement('div');
             el.className = item.type === 'date' ? 'date-separator draggable-item' : 'comment-bubble draggable-item';
             el.textContent = item.text;
-            
+
             if (item.type === 'comment') {
                 el.addEventListener('dblclick', () => enableInlineEditing(el, index));
             }
 
-            const actions = document.createElement('div'); actions.className = 'message-actions';
-            if (item.type === 'comment') actions.innerHTML += `<button title="Bearbeiten" class="message-action-btn edit-btn" onclick="startEditComment(${index})">Edit</button>`;
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+            if (item.type === 'comment') {
+                actions.innerHTML += `<button title="Bearbeiten" class="message-action-btn edit-btn" onclick="startEditComment(${index})">Edit</button>`;
+            }
             actions.innerHTML += `<button title="Löschen" class="message-action-btn delete-btn" onclick="deleteChatItem(${index})">Delete</button>`;
             el.appendChild(actions);
         } else {
@@ -544,36 +1279,42 @@
             if (!user) return document.createElement('div');
             const isOutgoing = user.id === currentState.users[0]?.id;
             const isGroupChat = currentState.users.length > 2;
-            el = document.createElement('div'); el.className = `message-item draggable-item ${isOutgoing ? 'outgoing' : 'incoming'}`;
+
+            el = document.createElement('div');
+            el.className = `message-item draggable-item ${isOutgoing ? 'outgoing' : 'incoming'}`;
+
             const nextItem = currentState.chatItems[index + 1];
             const showAvatar = !isOutgoing && (!nextItem || ['date', 'comment'].includes(nextItem.type) || nextItem.userId !== item.userId);
             if (showAvatar) el.classList.add('show-avatar');
-            
-            const bubble = document.createElement('div'); 
+
+            const bubble = document.createElement('div');
             bubble.className = `bubble ${isOutgoing ? 'outgoing' : 'incoming'}`;
             let contentHTML = '';
-            if (isGroupChat && !isOutgoing) { contentHTML += `<div class="sender-name">${escapeHtml(user.name)}</div>`; }
-            
+            if (isGroupChat && !isOutgoing) contentHTML += `<div class="sender-name">${escapeHtml(user.name)}</div>`;
+
             if (item.type === 'text') {
                 contentHTML += `<div class="message-text">${escapeHtml(item.text)}</div>`;
             } else if (item.type === 'image') {
-                contentHTML += `<img src="${item.picDataUri}" alt="Chat-Bild" style="max-width: 100%; border-radius: 6px;">`;
+                contentHTML += `<img src="${item.picDataUri}" alt="Chat-Bild" style="max-width: 100%; border-radius: 6px; display: block;">`;
             }
             bubble.innerHTML = contentHTML;
-            
+
             if (item.type === 'text') {
                 const textElement = bubble.querySelector('.message-text');
-                if (textElement) {
-                    textElement.addEventListener('dblclick', () => enableInlineEditing(textElement, index));
-                }
+                if (textElement) textElement.addEventListener('dblclick', () => enableInlineEditing(textElement, index));
             }
 
-            const avatar = document.createElement('img'); avatar.src = user.pic; avatar.className = 'chat-avatar';
-            el.appendChild(avatar); 
+            const avatar = document.createElement('img');
+            avatar.src = user.pic;
+            avatar.className = 'chat-avatar';
+            el.appendChild(avatar);
             el.appendChild(bubble);
-            
-            const actions = document.createElement('div'); actions.className = 'message-actions';
-            if (item.type === 'text') actions.innerHTML += `<button title="Bearbeiten" class="message-action-btn edit-btn" onclick="startEditMessage(${index})">Edit</button>`;
+
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+            if (item.type === 'text') {
+                actions.innerHTML += `<button title="Bearbeiten" class="message-action-btn edit-btn" onclick="startEditMessage(${index})">Edit</button>`;
+            }
             actions.innerHTML += `<button title="Löschen" class="message-action-btn delete-btn" onclick="deleteChatItem(${index})">Delete</button>`;
             el.appendChild(actions);
         }
@@ -581,97 +1322,156 @@
         el.dataset.index = index;
         return el;
     }
-    
-    window.startEditUser = startEditUser; window.deleteUser = deleteUser;
-    window.startEditMessage = startEditMessage; window.deleteChatItem = deleteChatItem; window.startEditComment = startEditComment;
-    function createDefaultAvatar(name) { const canvas = document.createElement('canvas'); canvas.width = 100; canvas.height = 100; const context = canvas.getContext('2d'); const colors = ['#1abc9c', '#2ecc71', '#3498db', '#9b59b6', '#34495e', '#f1c40f', '#e67e22', '#e74c3c']; context.fillStyle = colors[Math.floor(Math.random() * colors.length)]; context.fillRect(0, 0, 100, 100); context.font = 'bold 50px Segoe UI'; context.fillStyle = '#fff'; context.textAlign = 'center'; context.textBaseline = 'middle'; context.fillText(name.charAt(0).toUpperCase(), 50, 52); return canvas.toDataURL(); }
-    function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
-    
+
+    // =====================================================================
+    // GLOBALE FUNKTIONEN (für onclick-Attribute)
+    // =====================================================================
+    window.startEditUser = startEditUser;
+    window.deleteUser = deleteUser;
+    window.startEditMessage = startEditMessage;
+    window.deleteChatItem = deleteChatItem;
+    window.startEditComment = startEditComment;
+
+    // =====================================================================
+    // HILFSFUNKTIONEN
+    // =====================================================================
+    function createDefaultAvatar(name) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 100; canvas.height = 100;
+        const ctx = canvas.getContext('2d');
+        const colors = ['#1abc9c','#2ecc71','#3498db','#9b59b6','#34495e','#f1c40f','#e67e22','#e74c3c'];
+        ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+        ctx.fillRect(0, 0, 100, 100);
+        ctx.font = 'bold 50px Segoe UI';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(name.charAt(0).toUpperCase(), 50, 52);
+        return canvas.toDataURL();
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // =====================================================================
+    // EXPORT
+    // =====================================================================
     function generateAndDownloadHtml() {
-        if (state.users.length === 0) { alert('Bitte fügen Sie mindestens einen Teilnehmer hinzu.'); return; }
+        if (state.users.length === 0) { showToast('Bitte fügen Sie mindestens einen Teilnehmer hinzu.', 'error'); return; }
         const displayMode = document.querySelector('input[name="display-mode"]:checked').value;
-        const finalHtml = getFinalTemplate(JSON.stringify(state), displayMode);
+        const theme = THEMES[state.theme] || THEMES.whatsapp;
+        const finalHtml = getFinalTemplate(JSON.stringify(state), displayMode, theme.vars);
         const blob = new Blob([finalHtml], { type: 'text/html' });
         const fileName = `${state.title.replace(/[^a-z0-9]/gi, '_')}.html`;
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fileName; a.click(); URL.revokeObjectURL(a.href);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast('Datei wird heruntergeladen');
     }
-    
-    function getFinalTemplate(stateJson, displayMode) {
+
+    function getFinalTemplate(stateJson, displayMode, themeVars) {
         const finalState = JSON.parse(stateJson);
-        return `
-<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(finalState.title)}</title>
+
+        // Theme-CSS-Variablen für die exportierte Datei zusammenstellen
+        const themeCssVars = Object.entries(themeVars)
+            .map(([k, v]) => `    ${k}: ${v};`)
+            .join('\n');
+
+        return `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${escapeHtml(finalState.title)}</title>
 <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; margin: 0; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
-    .display-wrapper { width: 100%; max-width: 500px; }
-    .chat-container { width: 100%; aspect-ratio: 10.5 / 19.5; max-height: 90vh; background-color: #e5ddd5; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARMAAAARCAYAAAA/IaxpAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAB5JREFUeNrs2AEBAAAAwqD1T20ND6AAAAAAAAAA4NcAqQABBgBFcgAB2e4u/QAAAABJRU5ErkJggg=='); display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); overflow: hidden; }
-    .chat-header { background-color: #f0f2f5; padding: 15px; border-bottom: 1px solid #ddd; text-align: center; flex-shrink: 0; }
-    .chat-header h1 { margin: 0; font-size: 1.5rem; color: #172554; }
-    .chat-body { flex-grow: 1; padding: 20px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
-    .message-item { display: flex; max-width: 80%; width: fit-content; align-items: flex-end; gap: 10px; transition: opacity 0.4s ease, transform 0.4s ease; }
-    .message-item.hidden { opacity: 0; transform: scale(0.95) translateY(10px); }
-    .message-item.outgoing { align-self: flex-end; }
-    .message-item.incoming { align-self: flex-start; }
-    .bubble { padding: 7px 12px; border-radius: 8px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); line-height: 1.4; }
-    .bubble .message-text { white-space: pre-wrap; word-wrap: break-word; font-size: 0.95rem; }
-    .bubble.outgoing { background-color: #dcf8c6; }
-    .bubble.incoming { background-color: #ffffff; }
-    .sender-name { font-size: 0.85rem; font-weight: bold; color: #0284c7; margin-bottom: 4px; }
-    .date-separator, .comment-bubble { align-self: center; background-color: #e1f2fb; color: #57829b; font-size: 0.8rem; font-weight: 500; padding: 4px 10px; border-radius: 8px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); margin: 10px 0; transition: opacity 0.4s ease, transform 0.4s ease; }
-    .comment-bubble { background-color: #fffbe6; color: #92400e; border: 1px solid #fde68a; width: 95%; text-align: center; font-style: italic; }
-    .comment-bubble.hidden, .date-separator.hidden { opacity: 0; transform: scale(0.95) translateY(10px); }
-    .chat-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; visibility: hidden; }
-    .message-item.show-avatar .chat-avatar { visibility: visible; }
+:root {
+${themeCssVars}
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+.display-wrapper { width: 100%; max-width: 500px; }
+.chat-container { width: 100%; aspect-ratio: 10.5 / 19.5; max-height: 90vh; background-color: var(--phone-bg); background-image: var(--phone-bg-image); display: flex; flex-direction: column; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.15); overflow: hidden; }
+.chat-header { background-color: var(--chat-header-bg); padding: 15px; border-bottom: 1px solid rgba(0,0,0,0.1); text-align: center; flex-shrink: 0; }
+.chat-header h1 { margin: 0; font-size: 1.2rem; color: var(--chat-header-text); }
+.chat-body { flex-grow: 1; padding: 12px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.message-item { display: flex; max-width: 80%; width: fit-content; align-items: flex-end; gap: 8px; transition: opacity 0.4s ease, transform 0.4s ease; }
+.message-item.hidden { opacity: 0; transform: scale(0.95) translateY(10px); }
+.message-item.outgoing { align-self: flex-end; }
+.message-item.incoming { align-self: flex-start; }
+.bubble { padding: 7px 12px; border-radius: var(--bubble-radius, 8px); box-shadow: 0 1px 1px rgba(0,0,0,0.1); line-height: 1.4; }
+.bubble .message-text { white-space: pre-wrap; word-wrap: break-word; font-size: 0.92rem; }
+.bubble.outgoing { background-color: var(--bubble-outgoing); color: var(--bubble-outgoing-text); }
+.bubble.incoming { background-color: var(--bubble-incoming); color: var(--bubble-incoming-text); }
+.sender-name { font-size: 0.82rem; font-weight: bold; color: var(--sender-name-color); margin-bottom: 3px; }
+.date-separator, .comment-bubble { align-self: center; background-color: rgba(225,242,251,0.8); color: #57829b; font-size: 0.78rem; font-weight: 500; padding: 4px 10px; border-radius: 8px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); margin: 8px 0; transition: opacity 0.4s ease, transform 0.4s ease; }
+.comment-bubble { background-color: var(--bubble-comment, #fffbe6); color: #92400e; border: 1px solid rgba(253,230,138,0.8); width: 95%; text-align: center; font-style: italic; }
+.comment-bubble.hidden, .date-separator.hidden { opacity: 0; transform: scale(0.95) translateY(10px); }
+.chat-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; visibility: hidden; }
+.message-item.show-avatar .chat-avatar { visibility: visible; }
 </style>
-</head><body><div class="display-wrapper"><div class="chat-container">
+</head>
+<body>
+<div class="display-wrapper">
+  <div class="chat-container">
     <header class="chat-header"><h1></h1></header>
     <main class="chat-body"></main>
-</div></div>
+  </div>
+</div>
 <script>
-    const state = ${stateJson};
-    const displayMode = '${displayMode}';
-    function escapeFinalHtml(text) { return text.replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-    function createMessageElement(item, index, currentState) {
-        let el;
-        if (item.type === 'date') { el = document.createElement('div'); el.className = 'date-separator'; el.textContent = escapeFinalHtml(item.text); }
-        else if (item.type === 'comment') { el = document.createElement('div'); el.className = 'comment-bubble'; el.textContent = escapeFinalHtml(item.text); }
-        else {
-            const user = currentState.users.find(u => u.id === item.userId); if (!user) return null;
-            const isOutgoing = user.id === currentState.users[0]?.id;
-            const isGroupChat = currentState.users.length > 2;
-            el = document.createElement('div'); el.className = \`message-item \${isOutgoing ? 'outgoing' : 'incoming'}\`;
-            const nextItem = currentState.chatItems[index + 1];
-            const showAvatar = !isOutgoing && (!nextItem || ['date', 'comment'].includes(nextItem.type) || nextItem.userId !== item.userId);
-            if (showAvatar) el.classList.add('show-avatar');
-            const bubble = document.createElement('div'); bubble.className = \`bubble \${isOutgoing ? 'outgoing' : 'incoming'}\`;
-            let contentHTML = '';
-            if (isGroupChat && !isOutgoing) contentHTML += \`<div class="sender-name">\${escapeFinalHtml(user.name)}</div>\`;
-            if (item.type === 'text') contentHTML += \`<div class="message-text">\${escapeFinalHtml(item.text)}</div>\`;
-            else if (item.type === 'image') contentHTML += \`<img src="\${item.picDataUri}" alt="Chat-Bild" style="max-width:250px; border-radius:6px;">\`;
-            bubble.innerHTML = contentHTML;
-            const avatar = document.createElement('img'); avatar.className = 'chat-avatar'; avatar.src = user.pic;
-            el.appendChild(avatar); el.appendChild(bubble);
-        }
-        return el;
+const state = ${stateJson};
+const displayMode = '${displayMode}';
+function escapeFinalHtml(text) { return text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function createMessageElement(item, index, currentState) {
+    let el;
+    if (item.type === 'date') { el = document.createElement('div'); el.className = 'date-separator'; el.textContent = item.text; }
+    else if (item.type === 'comment') { el = document.createElement('div'); el.className = 'comment-bubble'; el.textContent = item.text; }
+    else {
+        const user = currentState.users.find(u => u.id === item.userId); if (!user) return null;
+        const isOutgoing = user.id === currentState.users[0]?.id;
+        const isGroupChat = currentState.users.length > 2;
+        el = document.createElement('div'); el.className = \`message-item \${isOutgoing ? 'outgoing' : 'incoming'}\`;
+        const nextItem = currentState.chatItems[index + 1];
+        const showAvatar = !isOutgoing && (!nextItem || ['date','comment'].includes(nextItem.type) || nextItem.userId !== item.userId);
+        if (showAvatar) el.classList.add('show-avatar');
+        const bubble = document.createElement('div'); bubble.className = \`bubble \${isOutgoing ? 'outgoing' : 'incoming'}\`;
+        let html = '';
+        if (isGroupChat && !isOutgoing) html += \`<div class="sender-name">\${escapeFinalHtml(user.name)}</div>\`;
+        if (item.type === 'text') html += \`<div class="message-text">\${escapeFinalHtml(item.text)}</div>\`;
+        else if (item.type === 'image') html += \`<img src="\${item.picDataUri}" style="max-width:250px;border-radius:6px;display:block;">\`;
+        bubble.innerHTML = html;
+        const avatar = document.createElement('img'); avatar.className = 'chat-avatar'; avatar.src = user.pic;
+        el.appendChild(avatar); el.appendChild(bubble);
     }
-    const delay = ms => new Promise(res => setTimeout(res, ms));
-    async function renderAnimated(chatBody) {
-        let lastUserId = null;
-        for (const [index, item] of state.chatItems.entries()) {
-            const el = createMessageElement(item, index, state); if (!el) continue;
-            el.classList.add('hidden'); chatBody.appendChild(el); chatBody.scrollTop = chatBody.scrollHeight;
-            let waitTime = 400;
-            if (item.type !== 'date' && item.type !== 'comment' && lastUserId && item.userId !== lastUserId) { waitTime = 1200; }
-            await delay(waitTime);
-            el.classList.remove('hidden'); chatBody.scrollTop = chatBody.scrollHeight;
-            lastUserId = 'userId' in item ? item.userId : null;
-        }
+    return el;
+}
+const delay = ms => new Promise(res => setTimeout(res, ms));
+async function renderAnimated(chatBody) {
+    let lastUserId = null;
+    for (const [index, item] of state.chatItems.entries()) {
+        const el = createMessageElement(item, index, state); if (!el) continue;
+        el.classList.add('hidden'); chatBody.appendChild(el); chatBody.scrollTop = chatBody.scrollHeight;
+        let waitTime = 400;
+        if (item.type !== 'date' && item.type !== 'comment' && lastUserId && item.userId !== lastUserId) waitTime = 1200;
+        await delay(waitTime);
+        el.classList.remove('hidden'); chatBody.scrollTop = chatBody.scrollHeight;
+        lastUserId = 'userId' in item ? item.userId : null;
     }
-    function renderStatic(chatBody) { state.chatItems.forEach((item, index) => { const el = createMessageElement(item, index, state); if (el) chatBody.appendChild(el); }); chatBody.scrollTop = chatBody.scrollHeight; }
-    document.addEventListener('DOMContentLoaded', () => { document.querySelector('.chat-header h1').textContent = escapeFinalHtml(state.title); const chatBody = document.querySelector('.chat-body'); if (displayMode === 'animated') renderAnimated(chatBody); else renderStatic(chatBody); });
+}
+function renderStatic(chatBody) { state.chatItems.forEach((item, i) => { const el = createMessageElement(item, i, state); if (el) chatBody.appendChild(el); }); chatBody.scrollTop = chatBody.scrollHeight; }
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelector('.chat-header h1').textContent = state.title;
+    const chatBody = document.querySelector('.chat-body');
+    if (displayMode === 'animated') renderAnimated(chatBody); else renderStatic(chatBody);
+});
 <\/script>
-</body></html>`;
+</body>
+</html>`;
     }
-    
+
     init();
 })();
 </script>
