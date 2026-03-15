@@ -90,7 +90,7 @@
             margin-bottom: 1rem;
         }
         textarea { resize: vertical; min-height: 80px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; align-items: end; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; align-items: stretch; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 
         button, .file-label {
@@ -121,6 +121,8 @@
         .edit-btn { background-color: var(--edit-color); }
         .cancel-btn { background-color: var(--cancel-color); color: white; }
         .cancel-btn:hover { background-color: var(--cancel-hover); }
+        #message-creation-controls button,
+        #message-creation-controls .file-label { padding: 6px 10px; font-size: 0.85rem; }
 
         .hidden { display: none !important; }
 
@@ -454,11 +456,9 @@
                 <div id="message-creation-controls" class="grid-3" style="margin-bottom: 0.75rem;">
                     <button id="add-date-btn" class="tertiary-btn">📅 Datum</button>
                     <button id="add-comment-btn" class="tertiary-btn">💬 Kommentar</button>
-                    <div style="display: contents;">
-                        <input type="file" id="add-image-input" accept="image/*" style="display:none">
-                        <label for="add-image-input" class="file-label tertiary-btn" style="width: 100%; box-sizing: border-box;">🖼 Bild</label>
-                    </div>
+                    <label for="add-image-input" class="file-label tertiary-btn">🖼 Bild</label>
                 </div>
+                <input type="file" id="add-image-input" accept="image/*" style="display:none">
 
                 <!-- Inline-Formular: Datum -->
                 <div id="date-inline-form" class="inline-form hidden">
