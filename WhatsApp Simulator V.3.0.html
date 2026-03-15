@@ -29,6 +29,13 @@
             --cancel-hover: #475569;
             --disabled-color: #9ca3af;
 
+            /* UI-Farbschema-Variablen */
+            --main-btn-text: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1;
+            --card-border: transparent;
+            --inline-form-border: #e2e8f0;
+
             /* Chat-Vorschau Variablen (durch Themes überschrieben) */
             --phone-bg: #e5ddd5;
             --phone-bg-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARMAAAARCAYAAAA/IaxpAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAB5JREFUeNrs2AEBAAAAwqD1T20ND6AAAAAAAAAA4NcAqQABBgBFcgAB2e4u/QAAAABJRU5ErkJggg==');
@@ -70,6 +77,7 @@
             border-radius: 12px;
             margin-bottom: 1.5rem;
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 1px solid var(--card-border);
             transition: opacity 0.3s;
         }
         .editor-section.disabled { opacity: 0.5; pointer-events: none; }
@@ -84,10 +92,12 @@
         input[type="text"], select, textarea {
             width: 100%;
             padding: 10px;
-            border: 1px solid #cbd5e1;
+            border: 1px solid var(--input-border);
             border-radius: 5px;
             font-size: 0.95rem;
             margin-bottom: 1rem;
+            background-color: var(--input-bg);
+            color: var(--primary-text);
         }
         textarea { resize: vertical; min-height: 80px; }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; align-items: stretch; }
@@ -105,11 +115,11 @@
         }
         .file-label { display: flex; align-items: center; justify-content: center; }
 
-        .primary-btn { background-color: var(--primary-action-color); color: white; }
+        .primary-btn { background-color: var(--primary-action-color); color: var(--main-btn-text); }
         .primary-btn:hover:not(:disabled) { background-color: var(--primary-action-hover); }
         .primary-btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; }
 
-        .secondary-btn { background-color: var(--secondary-action-color); color: white; }
+        .secondary-btn { background-color: var(--secondary-action-color); color: var(--main-btn-text); }
         .secondary-btn:hover { background-color: var(--secondary-action-hover); }
 
         .tertiary-btn { background-color: var(--tertiary-action-color); color: white; }
@@ -135,7 +145,7 @@
             padding: 0.75rem;
             background: var(--editor-section-bg);
             border-radius: 8px;
-            border: 1px solid #e2e8f0;
+            border: 1px solid var(--inline-form-border);
             animation: slideDown 0.2s ease;
         }
         .inline-form input[type="text"] {
@@ -303,6 +313,54 @@
             line-height: 1.6;
         }
 
+        /* Globale Farbschema-Leiste */
+        .color-scheme-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--editor-card-bg);
+            border: 1px solid var(--card-border);
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            flex-wrap: wrap;
+        }
+        .color-scheme-bar-label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--secondary-text);
+            white-space: nowrap;
+        }
+        .color-scheme-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .scheme-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border: 2px solid var(--input-border);
+            border-radius: 8px;
+            background: var(--editor-section-bg);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--primary-text);
+            transition: all 0.2s;
+        }
+        .scheme-btn:hover { border-color: #94a3b8; transform: translateY(-1px); }
+        .scheme-btn.active {
+            border-color: var(--primary-action-color);
+            background: var(--editor-card-bg);
+            box-shadow: 0 0 0 3px rgba(30,58,138,0.12);
+        }
+        .scheme-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid rgba(0,0,0,0.2);
+            flex-shrink: 0;
+        }
+
         /* Theme-Selector */
         .theme-selector {
             display: grid;
@@ -387,6 +445,23 @@
 
 <div class="editor-wrapper">
     <h1>Chat-Generator</h1>
+
+    <!-- Globale Farbschema-Auswahl -->
+    <div class="color-scheme-bar">
+        <span class="color-scheme-bar-label">Farbschema:</span>
+        <div class="color-scheme-btns">
+            <button class="scheme-btn active" data-scheme="standard">
+                <span class="scheme-dot" style="background:#1e3a8a;"></span>
+                <span class="scheme-dot" style="background:#f0f2f5;"></span>
+                Standard
+            </button>
+            <button class="scheme-btn" data-scheme="bw">
+                <span class="scheme-dot" style="background:#fffc00; border-color:#555;"></span>
+                <span class="scheme-dot" style="background:#000000;"></span>
+                BW
+            </button>
+        </div>
+    </div>
 
     <div class="main-layout">
 
@@ -581,6 +656,68 @@
 <script>
 (function() {
     // =====================================================================
+    // UI-FARBSCHEMA-DEFINITIONEN
+    // =====================================================================
+    const UI_SCHEMES = {
+        standard: {
+            label: 'Standard',
+            vars: {
+                '--editor-bg': '#f0f2f5',
+                '--editor-card-bg': '#ffffff',
+                '--editor-section-bg': '#f8fafc',
+                '--primary-text': '#333',
+                '--secondary-text': '#475569',
+                '--header-text-color': '#1e3a8a',
+                '--primary-action-color': '#1e3a8a',
+                '--primary-action-hover': '#172554',
+                '--secondary-action-color': '#10b981',
+                '--secondary-action-hover': '#059669',
+                '--tertiary-action-color': '#173a79',
+                '--tertiary-action-hover': '#172554',
+                '--edit-color': '#f59e0b',
+                '--delete-color': '#ef4444',
+                '--delete-hover': '#dc2626',
+                '--cancel-color': '#64748b',
+                '--cancel-hover': '#475569',
+                '--disabled-color': '#9ca3af',
+                '--main-btn-text': '#ffffff',
+                '--input-bg': '#ffffff',
+                '--input-border': '#cbd5e1',
+                '--card-border': 'transparent',
+                '--inline-form-border': '#e2e8f0',
+            }
+        },
+        bw: {
+            label: 'BW',
+            vars: {
+                '--editor-bg': '#0d0d0d',
+                '--editor-card-bg': '#1a1a1a',
+                '--editor-section-bg': '#111111',
+                '--primary-text': '#f5f5f5',
+                '--secondary-text': '#aaaaaa',
+                '--header-text-color': '#fffc00',
+                '--primary-action-color': '#fffc00',
+                '--primary-action-hover': '#e6e300',
+                '--secondary-action-color': '#fffc00',
+                '--secondary-action-hover': '#e6e300',
+                '--tertiary-action-color': '#2a2a2a',
+                '--tertiary-action-hover': '#3a3a3a',
+                '--edit-color': '#cc9900',
+                '--delete-color': '#cc3333',
+                '--delete-hover': '#aa2222',
+                '--cancel-color': '#3a3a3a',
+                '--cancel-hover': '#4a4a4a',
+                '--disabled-color': '#3a3a3a',
+                '--main-btn-text': '#000000',
+                '--input-bg': '#111111',
+                '--input-border': '#444444',
+                '--card-border': '#2a2a2a',
+                '--inline-form-border': '#333333',
+            }
+        }
+    };
+
+    // =====================================================================
     // THEME-DEFINITIONEN
     // =====================================================================
     const THEMES = {
@@ -726,7 +863,7 @@
         toastContainer:         getEl('toast-container'),
     };
 
-    let state = { title: 'Chat', users: [], chatItems: [], theme: 'whatsapp' };
+    let state = { title: 'Chat', users: [], chatItems: [], theme: 'whatsapp', colorScheme: 'standard' };
     let editingState = null;
     let tempUserPicFile = null;
     let draggedItemIndex = null;
@@ -781,8 +918,14 @@
             btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
         });
 
+        // Farbschema-Buttons
+        document.querySelectorAll('.scheme-btn').forEach(btn => {
+            btn.addEventListener('click', () => applyColorScheme(btn.dataset.scheme));
+        });
+
         render();
-        applyTheme(state.theme, false); // false = kein save nötig beim Init
+        applyColorScheme(state.colorScheme, false); // Farbschema zuerst setzen
+        applyTheme(state.theme, false); // Chat-Theme darüber legen
     }
 
     // =====================================================================
@@ -796,6 +939,18 @@
         state.theme = themeName;
         document.querySelectorAll('.theme-btn').forEach(b => {
             b.classList.toggle('active', b.dataset.theme === themeName);
+        });
+        if (save) saveToLocalStorage();
+    }
+
+    function applyColorScheme(schemeName, save = true) {
+        if (!UI_SCHEMES[schemeName]) return;
+        const scheme = UI_SCHEMES[schemeName];
+        const root = document.documentElement;
+        Object.entries(scheme.vars).forEach(([k, v]) => root.style.setProperty(k, v));
+        state.colorScheme = schemeName;
+        document.querySelectorAll('.scheme-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.scheme === schemeName);
         });
         if (save) saveToLocalStorage();
     }
@@ -815,7 +970,7 @@
             if (saved) {
                 const parsed = JSON.parse(saved);
                 if (parsed && parsed.users) {
-                    state = { title: 'Chat', users: [], chatItems: [], theme: 'whatsapp', ...parsed };
+                    state = { title: 'Chat', users: [], chatItems: [], theme: 'whatsapp', colorScheme: 'standard', ...parsed };
                     elements.chatTitleInput.value = state.title;
                     if (state.users.length > 0) showToast('Letzter Stand wiederhergestellt', 'info');
                 }
