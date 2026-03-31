@@ -297,7 +297,28 @@
         .chat-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; visibility: hidden; }
         .message-item.show-avatar .chat-avatar { visibility: visible; }
 
-        /* Einklappbare Sektionen */
+        /* Emoji-Picker */
+        .emoji-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            background: var(--editor-section-bg);
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 6px;
+            margin-bottom: 0.5rem;
+        }
+        .emoji-btn {
+            background: none;
+            border: none;
+            padding: 4px 5px;
+            font-size: 1.15rem;
+            cursor: pointer;
+            border-radius: 5px;
+            line-height: 1;
+            transition: background 0.15s;
+        }
+        .emoji-btn:hover { background: #e2e8f0; }
         .collapsible-section {
             margin-bottom: 1.5rem;
         }
@@ -535,6 +556,7 @@
                 <label for="sender-select" style="margin-top: 0.75rem;">Absender</label>
                 <select id="sender-select" style="margin-bottom: 0.75rem;"></select>
                 <label for="message-text">Nachricht <span style="font-size: 0.8rem; color: var(--secondary-text); font-weight: 400;">(Strg+Enter zum Senden)</span></label>
+                <div class="emoji-bar" id="emoji-bar"></div>
                 <textarea id="message-text" placeholder="Nachrichtentext eingeben..."></textarea>
                 <div style="display: flex; gap: 10px; margin-top: 0.5rem;">
                     <button id="add-message-btn" class="primary-btn" style="flex: 1;">Textnachricht hinzufügen</button>
@@ -837,6 +859,9 @@
             }
         });
 
+        // Emoji-Panel
+        initEmojiBar();
+
         // Theme-Buttons
         document.querySelectorAll('.theme-btn').forEach(btn => {
             btn.addEventListener('click', () => applyTheme(btn.dataset.theme));
@@ -844,6 +869,41 @@
 
         render();
         applyTheme(state.theme, false); // false = kein save nötig beim Init
+    }
+
+    // =====================================================================
+    // EMOJI-PANEL
+    // =====================================================================
+    function initEmojiBar() {
+        const EMOJIS = [
+            '😀','😂','🤣','😊','😍','🥰','😘','😎','🤩','😏',
+            '😢','😭','😤','😡','🥺','😬','🤔','😴','🤯','🥳',
+            '👍','👎','👏','🙌','🤝','🙏','💪','✌️','👋','🤙',
+            '❤️','🧡','💛','💚','💙','💜','🖤','💔','❤️‍🔥','💯',
+            '🔥','✨','🎉','🎊','🎁','🏆','⭐','💫','💥','🚀',
+            '😅','🤗','😇','🥹','😶','🫠','🫡','🤭','😑','😒',
+            '🍕','🍔','🍟','🍦','🍩','🍺','🥂','☕','🍀','🌈',
+        ];
+        const bar = document.getElementById('emoji-bar');
+        if (!bar) return;
+        EMOJIS.forEach(emoji => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'emoji-btn';
+            btn.textContent = emoji;
+            btn.title = emoji;
+            btn.addEventListener('click', () => insertEmoji(emoji));
+            bar.appendChild(btn);
+        });
+    }
+
+    function insertEmoji(emoji) {
+        const ta = elements.messageText;
+        const start = ta.selectionStart;
+        const end = ta.selectionEnd;
+        ta.value = ta.value.substring(0, start) + emoji + ta.value.substring(end);
+        ta.selectionStart = ta.selectionEnd = start + emoji.length;
+        ta.focus();
     }
 
     // =====================================================================
