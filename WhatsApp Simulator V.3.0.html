@@ -122,7 +122,14 @@
         .cancel-btn { background-color: var(--cancel-color); color: white; }
         .cancel-btn:hover { background-color: var(--cancel-hover); }
         #message-creation-controls button,
-        #message-creation-controls .file-label { padding: 6px 10px; font-size: 0.85rem; }
+        #message-creation-controls .file-label {
+            padding: 6px 10px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
 
         .hidden { display: none !important; }
 
@@ -289,6 +296,38 @@
         }
         .chat-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; visibility: hidden; }
         .message-item.show-avatar .chat-avatar { visibility: visible; }
+
+        /* Einklappbare Sektionen */
+        .collapsible-section {
+            margin-bottom: 1.5rem;
+        }
+        .collapsible-section > summary {
+            cursor: pointer;
+            font-weight: bold;
+            padding: 1rem 1.5rem;
+            background: var(--editor-card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--header-text-color);
+            font-size: 1rem;
+            transition: background 0.2s;
+            user-select: none;
+        }
+        .collapsible-section > summary:hover { background: #f0f4ff; }
+        .collapsible-section[open] > summary { border-radius: 12px 12px 0 0; margin-bottom: 0; }
+        .collapsible-section > summary .toggle-icon { transition: transform 0.2s; display: inline-block; font-style: normal; }
+        .collapsible-section[open] > summary .toggle-icon { transform: rotate(90deg); }
+        .collapsible-section > .editor-section {
+            margin-top: 0;
+            margin-bottom: 0;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .collapsible-section > .editor-section h3 { display: none; }
         .dragging { opacity: 0.4; }
         .drag-over-top { border-top: 2px solid var(--edit-color); }
         .drag-over-bottom { border-bottom: 2px solid var(--edit-color); }
@@ -399,9 +438,9 @@
                     <span style="font-size: 1.1rem;">&#8595;</span> Chat aus Datei importieren
                 </summary>
                 <div id="import-section" class="editor-section" style="margin-top: -1rem; border-radius: 0 0 12px 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
-                    <p style="margin-top: 0; color: var(--secondary-text);">Laden Sie einen kompletten Chat aus einer <code>.txt</code> oder <code>.csv</code>-Datei. Dies überschreibt den aktuellen Chat.</p>
+                    <p style="margin-top: 0; color: var(--secondary-text);">Laden Sie einen kompletten Chat aus einer <code>.txt</code>, <code>.csv</code> oder <code>.json</code>-Datei. Dies überschreibt den aktuellen Chat.</p>
                     <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
-                        <input type="file" id="import-file-input" accept=".txt,.csv" style="display: none;">
+                        <input type="file" id="import-file-input" accept=".txt,.csv,.json" style="display: none;">
                         <label for="import-file-input" class="file-label tertiary-btn" style="flex-shrink: 0;">Datei wählen</label>
                         <span id="import-filename" style="flex-grow: 1; color: var(--secondary-text); font-style: italic; font-size: 0.9rem;">Keine Datei gewählt.</span>
                         <button id="import-btn" class="primary-btn" disabled style="flex-shrink: 0;">Importieren</button>
@@ -409,25 +448,42 @@
                     <details>
                         <summary style="cursor: pointer; font-weight: bold; font-size: 0.9rem;">Dateiformat anzeigen</summary>
                         <div class="import-format" style="margin-top: 0.75rem;">
-                            <strong># Format</strong><br>
+                            <strong># TXT / CSV Format</strong><br>
                             <code>TITLE: Ihr Chat-Titel</code><br>
                             <code>USER: NameDesTeilnehmers</code><br>
                             <code>--- Text für Datums-Trenner ---</code><br>
                             <code>COMMENT: Ihr Kommentartext</code><br>
                             <code>AbsenderName: Text der Nachricht</code><br>
-                            <code>AbsenderName: IMAGE: http://link.zum/bild.png</code>
+                            <code>AbsenderName: IMAGE: http://link.zum/bild.png</code><br>
+                            <br>
+                            <strong># JSON Format</strong><br>
+                            <code>{</code><br>
+                            <code>&nbsp;&nbsp;"title": "Chat-Titel",</code><br>
+                            <code>&nbsp;&nbsp;"users": ["Anna", "Bob"],</code><br>
+                            <code>&nbsp;&nbsp;"items": [</code><br>
+                            <code>&nbsp;&nbsp;&nbsp;&nbsp;{"type": "date", "text": "HEUTE"},</code><br>
+                            <code>&nbsp;&nbsp;&nbsp;&nbsp;{"type": "text", "from": "Anna", "text": "Hallo!"},</code><br>
+                            <code>&nbsp;&nbsp;&nbsp;&nbsp;{"type": "comment", "text": "Info"},</code><br>
+                            <code>&nbsp;&nbsp;&nbsp;&nbsp;{"type": "image", "from": "Bob", "src": "http://..."}</code><br>
+                            <code>&nbsp;&nbsp;]</code><br>
+                            <code>}</code>
                         </div>
                     </details>
                 </div>
             </details>
 
             <!-- 1. Chat-Titel -->
-            <div id="user-editor-section" class="editor-section">
-                <h3>1. Chat-Titel</h3>
-                <input type="text" id="chat-title-input" placeholder="z.B. Projektgruppe oder Name des Chatpartners" style="margin-bottom: 0;">
-            </div>
+            <details id="title-details" class="collapsible-section" open>
+                <summary><i class="toggle-icon">▶</i> 1. Chat-Titel</summary>
+                <div id="user-editor-section" class="editor-section">
+                    <h3>1. Chat-Titel</h3>
+                    <input type="text" id="chat-title-input" placeholder="z.B. Projektgruppe oder Name des Chatpartners" style="margin-bottom: 0;">
+                </div>
+            </details>
 
             <!-- 2. Teilnehmer -->
+            <details id="participants-details" class="collapsible-section" open>
+                <summary><i class="toggle-icon">▶</i> 2. Teilnehmer hinzufügen</summary>
             <div id="user-add-section" class="editor-section">
                 <h3>2. Teilnehmer hinzufügen</h3>
                 <div style="display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: end; margin-bottom: 0.5rem;">
@@ -447,6 +503,7 @@
                 <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Bestehende Teilnehmer:</h4>
                 <div id="user-list-container"><p style="color: var(--secondary-text); font-style: italic; margin: 0;">Noch keine Teilnehmer hinzugefügt.</p></div>
             </div>
+            </details>
 
             <!-- 3. Nachrichten -->
             <div id="message-editor-section" class="editor-section" style="display: none;">
@@ -483,6 +540,10 @@
                     <button id="add-message-btn" class="primary-btn" style="flex: 1;">Textnachricht hinzufügen</button>
                     <button id="cancel-message-edit-btn" class="cancel-btn hidden">Abbrechen</button>
                 </div>
+                <label style="display:flex; align-items:center; gap:6px; margin-top:0.75rem; font-weight:400; cursor:pointer; font-size:0.9rem; color:var(--secondary-text);">
+                    <input type="checkbox" id="auto-switch-user">
+                    Sender nach Versand automatisch wechseln
+                </label>
             </div>
 
             <!-- Arbeitsfläche verwalten -->
@@ -941,6 +1002,13 @@
         render();
         saveToLocalStorage();
         showToast(`${user.name} hinzugefügt`);
+        // Nach dem ersten Teilnehmer beide Sektionen einklappen
+        if (state.users.length === 1) {
+            const titleDetails = document.getElementById('title-details');
+            const participantsDetails = document.getElementById('participants-details');
+            if (titleDetails) titleDetails.open = false;
+            if (participantsDetails) participantsDetails.open = false;
+        }
     }
 
     function startEditUser(userId) {
@@ -980,6 +1048,12 @@
             state.chatItems.push({ type: 'text', userId: parseInt(elements.senderSelect.value), text });
             elements.messageText.value = '';
             showToast('Nachricht hinzugefügt');
+            // Auto-Userwechsel
+            const autoSwitch = document.getElementById('auto-switch-user');
+            if (autoSwitch && autoSwitch.checked && state.users.length > 1) {
+                const idx = state.users.findIndex(u => u.id === parseInt(elements.senderSelect.value));
+                elements.senderSelect.value = state.users[(idx + 1) % state.users.length].id;
+            }
         }
         render();
         saveToLocalStorage();
@@ -1094,6 +1168,68 @@
         else { elements.importFilename.textContent = 'Keine Datei gewählt.'; elements.importBtn.disabled = true; }
     }
 
+    function applyImportedState(title, users, chatItems) {
+        if (!confirm('Dies überschreibt den aktuellen Chat. Fortfahren?')) return;
+        state.title = title;
+        state.users = users;
+        state.chatItems = chatItems;
+        elements.chatTitleInput.value = title;
+        render();
+        saveToLocalStorage();
+        showToast('Chat erfolgreich importiert', 'success');
+    }
+
+    function importFromJson(text) {
+        const data = JSON.parse(text);
+        if (!data.users || !Array.isArray(data.users) || data.users.length === 0)
+            throw new Error("JSON muss ein 'users'-Array mit mindestens einem Namen enthalten.");
+        const newUsers = data.users.map((name, i) => ({
+            id: Date.now() + i,
+            name: String(name),
+            pic: createDefaultAvatar(String(name))
+        }));
+        const nameToIdMap = new Map(newUsers.map(u => [u.name.toLowerCase(), u.id]));
+        const newChatItems = (data.items || []).map(item => {
+            if (item.type === 'date') return { type: 'date', text: String(item.text || '') };
+            if (item.type === 'comment') return { type: 'comment', text: String(item.text || '') };
+            if (item.type === 'text' || item.type === 'image') {
+                const userId = nameToIdMap.get(String(item.from || '').toLowerCase());
+                if (!userId) throw new Error(`Unbekannter Sender: '${item.from}'`);
+                if (item.type === 'text') return { type: 'text', userId, text: String(item.text || '') };
+                if (item.type === 'image') return { type: 'image', userId, picDataUri: String(item.src || '') };
+            }
+            return null;
+        }).filter(Boolean);
+        applyImportedState(data.title || 'Importierter Chat', newUsers, newChatItems);
+    }
+
+    function importFromTxt(text) {
+        const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+        const newTitle = lines.find(l => l.startsWith('TITLE:'))?.substring(6).trim() || 'Importierter Chat';
+        const newUsers = lines.filter(l => l.startsWith('USER:')).map((l, i) => ({ id: Date.now() + i, name: l.substring(5).trim() }));
+        if (newUsers.length === 0) throw new Error("Keine 'USER:'-Definitionen in der Datei gefunden.");
+        newUsers.forEach(u => u.pic = createDefaultAvatar(u.name));
+        const nameToIdMap = new Map(newUsers.map(u => [u.name.toLowerCase(), u.id]));
+
+        const newChatItems = lines
+            .filter(l => !l.startsWith('TITLE:') && !l.startsWith('USER:'))
+            .map(line => {
+                if (line.match(/^--- (.*) ---$/)) return { type: 'date', text: line.match(/^--- (.*) ---$/)[1].trim() };
+                if (line.match(/^COMMENT:(.*)/)) return { type: 'comment', text: line.match(/^COMMENT:(.*)/)[1].trim() };
+                const messageMatch = line.match(/^([^:]+):(.*)/);
+                if (messageMatch) {
+                    const senderName = messageMatch[1].trim(), content = messageMatch[2].trim();
+                    const userId = nameToIdMap.get(senderName.toLowerCase());
+                    if (!userId) throw new Error(`Unbekannter Sender: '${senderName}'`);
+                    if (content.startsWith('IMAGE:')) return { type: 'image', userId, picDataUri: content.substring(6).trim() };
+                    return { type: 'text', userId, text: content };
+                }
+                return null;
+            }).filter(Boolean);
+
+        applyImportedState(newTitle, newUsers, newChatItems);
+    }
+
     function importFromFile() {
         if (editingState) { showToast('Bitte beenden Sie zuerst die Bearbeitung.', 'error'); return; }
         const file = elements.importFileInput.files[0];
@@ -1101,36 +1237,12 @@
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const lines = e.target.result.split(/\r?\n/).filter(line => line.trim() !== '');
-                const newTitle = lines.find(l => l.startsWith('TITLE:'))?.substring(6).trim() || 'Importierter Chat';
-                const newUsers = lines.filter(l => l.startsWith('USER:')).map((l, i) => ({ id: Date.now() + i, name: l.substring(5).trim() }));
-                if (newUsers.length === 0) throw new Error("Keine 'USER:'-Definitionen in der Datei gefunden.");
-                newUsers.forEach(u => u.pic = createDefaultAvatar(u.name));
-                const nameToIdMap = new Map(newUsers.map(u => [u.name, u.id]));
-
-                const newChatItems = lines
-                    .filter(l => !l.startsWith('TITLE:') && !l.startsWith('USER:'))
-                    .map(line => {
-                        if (line.match(/^--- (.*) ---$/)) return { type: 'date', text: line.match(/^--- (.*) ---$/)[1].trim() };
-                        if (line.match(/^COMMENT:(.*)/)) return { type: 'comment', text: line.match(/^COMMENT:(.*)/)[1].trim() };
-                        const messageMatch = line.match(/^([^:]+):(.*)/);
-                        if (messageMatch) {
-                            const senderName = messageMatch[1].trim(), content = messageMatch[2].trim();
-                            const userId = nameToIdMap.get(senderName);
-                            if (!userId) return null;
-                            if (content.startsWith('IMAGE:')) return { type: 'image', userId, picDataUri: content.substring(6).trim() };
-                            return { type: 'text', userId, text: content };
-                        }
-                        return null;
-                    }).filter(Boolean);
-
-                state.title = newTitle;
-                state.users = newUsers;
-                state.chatItems = newChatItems;
-                elements.chatTitleInput.value = state.title;
-                render();
-                saveToLocalStorage();
-                showToast('Chat erfolgreich importiert', 'success');
+                const text = e.target.result.trim();
+                if (file.name.toLowerCase().endsWith('.json') || text.startsWith('{')) {
+                    importFromJson(text);
+                } else {
+                    importFromTxt(text);
+                }
             } catch (error) {
                 showToast('Fehler: ' + error.message, 'error');
             } finally {
