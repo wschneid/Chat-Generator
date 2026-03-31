@@ -126,8 +126,7 @@
             gap: 0.75rem;
             align-items: stretch;
         }
-        #message-creation-controls button,
-        #message-creation-controls .file-label {
+        #message-creation-controls button {
             flex: 1;
             padding: 6px 10px;
             font-size: 0.85rem;
@@ -539,7 +538,7 @@
                 <div id="message-creation-controls" style="margin-bottom: 0.75rem;">
                     <button id="add-date-btn" class="tertiary-btn">📅 Datum</button>
                     <button id="add-comment-btn" class="tertiary-btn">💬 Kommentar</button>
-                    <label for="add-image-input" class="file-label tertiary-btn">🖼 Bild</label>
+                    <button id="add-image-btn" class="tertiary-btn">🖼 Bild</button>
                 </div>
                 <input type="file" id="add-image-input" accept="image/*" style="display:none">
 
@@ -848,6 +847,7 @@
         });
 
         elements.addImageInput.addEventListener('change', addImageMessage);
+        getEl('add-image-btn').addEventListener('click', () => elements.addImageInput.click());
         elements.addMessageBtn.addEventListener('click', addOrUpdateTextMessage);
         elements.cancelMessageEditBtn.addEventListener('click', cancelEdit);
         elements.generateBtn.addEventListener('click', generateAndDownloadHtml);
