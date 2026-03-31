@@ -121,14 +121,19 @@
         .edit-btn { background-color: var(--edit-color); }
         .cancel-btn { background-color: var(--cancel-color); color: white; }
         .cancel-btn:hover { background-color: var(--cancel-hover); }
+        #message-creation-controls {
+            display: flex;
+            gap: 0.75rem;
+            align-items: stretch;
+        }
         #message-creation-controls button,
         #message-creation-controls .file-label {
+            flex: 1;
             padding: 6px 10px;
             font-size: 0.85rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 100%;
         }
 
         .hidden { display: none !important; }
@@ -531,7 +536,7 @@
                 <h3>3. Chat-Verlauf erstellen</h3>
 
                 <!-- Button-Leiste -->
-                <div id="message-creation-controls" class="grid-3" style="margin-bottom: 0.75rem;">
+                <div id="message-creation-controls" style="margin-bottom: 0.75rem;">
                     <button id="add-date-btn" class="tertiary-btn">📅 Datum</button>
                     <button id="add-comment-btn" class="tertiary-btn">💬 Kommentar</button>
                     <label for="add-image-input" class="file-label tertiary-btn">🖼 Bild</label>
