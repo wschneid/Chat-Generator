@@ -289,14 +289,22 @@
             box-shadow: 0 1px 1px rgba(0,0,0,0.1);
             margin: 8px 0;
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
         }
         .comment-bubble {
             background-color: var(--bubble-comment);
             color: #92400e;
             border: 1px solid #fde68a;
             width: 95%;
-            text-align: center;
             font-style: italic;
+        }
+        .date-separator .message-actions,
+        .comment-bubble .message-actions {
+            position: static;
+            transform: none;
         }
         .chat-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; visibility: hidden; }
         .message-item.show-avatar .chat-avatar { visibility: visible; }
