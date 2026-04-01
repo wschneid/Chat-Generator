@@ -453,6 +453,49 @@
             from { opacity: 1; transform: translateY(0); }
             to { opacity: 0; transform: translateY(12px); }
         }
+
+        /* ===================== Prompt-Generator Modal ===================== */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000;
+            display: flex; align-items: center; justify-content: center; padding: 1rem;
+        }
+        .modal-dialog {
+            background: var(--panel-bg); border-radius: 12px;
+            max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.25); display: flex; flex-direction: column;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-color);
+            position: sticky; top: 0; background: var(--panel-bg); z-index: 1;
+        }
+        .modal-header h3 { margin: 0; font-size: 1.05rem; }
+        .modal-close-btn {
+            background: none; border: none; cursor: pointer; font-size: 1.2rem;
+            color: var(--text-muted); padding: 2px 6px; border-radius: 4px; line-height: 1;
+        }
+        .modal-close-btn:hover { background: var(--hover-bg); }
+        .modal-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 0.85rem; }
+        .modal-body .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+        .modal-body .form-group > label { font-size: 0.85rem; font-weight: 600; color: var(--label-color); }
+        .modal-body input[type="text"], .modal-body input[type="number"],
+        .modal-body select, .modal-body textarea {
+            padding: 0.45rem 0.65rem; border: 1px solid var(--border-color);
+            border-radius: 6px; font-size: 0.9rem; background: var(--input-bg); color: var(--text-main);
+            width: 100%; box-sizing: border-box;
+        }
+        .modal-body textarea { resize: vertical; font-family: inherit; }
+        .pg-format-group { display: flex; gap: 1.5rem; }
+        .pg-format-group label {
+            font-weight: 400; font-size: 0.9rem; display: flex; align-items: center;
+            gap: 0.4rem; cursor: pointer; color: var(--text-main);
+        }
+        #pg-output {
+            display: flex; flex-direction: column; gap: 0.5rem;
+            border-top: 1px solid var(--border-color); padding-top: 0.85rem; margin-top: 0.25rem;
+        }
+        #pg-output > label { font-size: 0.85rem; font-weight: 600; color: var(--label-color); }
+        #pg-prompt-text { font-family: monospace; font-size: 0.78rem; min-height: 180px; }
     </style>
 </head>
 <body>
@@ -584,6 +627,11 @@
             <div class="editor-section">
                 <h3>Arbeitsfläche verwalten</h3>
                 <button id="clear-workspace-btn" class="delete-btn" style="width: 100%;">🗑 Arbeitsfläche leeren</button>
+                <div style="text-align:center; margin-top:0.6rem;">
+                    <button id="open-prompt-gen-btn" class="secondary-btn"
+                            title="Prompt für LLM-Chat-Generierung erstellen"
+                            style="font-size:0.85rem; width:100%;">🤖 LLM-Prompt erstellen</button>
+                </div>
             </div>
 
         </div><!-- /.editor-col -->
@@ -863,6 +911,15 @@
         elements.importBtn.addEventListener('click', importFromFile);
         elements.newUserPicInput.addEventListener('change', e => { tempUserPicFile = e.target.files[0]; });
         elements.clearWorkspaceBtn.addEventListener('click', clearWorkspace);
+
+        // Prompt-Generator
+        document.getElementById('open-prompt-gen-btn').addEventListener('click', openPromptGenerator);
+        document.getElementById('close-prompt-gen-btn').addEventListener('click', closePromptGenerator);
+        document.getElementById('pg-generate-btn').addEventListener('click', generateLLMPrompt);
+        document.getElementById('pg-copy-btn').addEventListener('click', copyPromptToClipboard);
+        document.getElementById('prompt-gen-modal').addEventListener('click', e => {
+            if (e.target === e.currentTarget) closePromptGenerator();
+        });
 
         // Ctrl+Enter für Textarea
         elements.messageText.addEventListener('keydown', e => {
@@ -1680,9 +1737,182 @@ document.addEventListener('DOMContentLoaded', () => {
 </html>`;
     }
 
+    // =====================================================================
+    // PROMPT-GENERATOR
+    // =====================================================================
+    const LANG_DATA = {
+        de: {
+            dateWord: 'HEUTE',
+            intro: (topic, level, participants, count) =>
+                `Erstelle einen Chat-Verlauf auf Deutsch (GER-Niveau: ${level}) zum Thema „${topic}".\n` +
+                `Die Teilnehmer sind: ${participants}.\n` +
+                `Der Chat soll ca. ${count} Nachrichten enthalten.\n\n` +
+                `Antworte NUR mit dem Chat-Text im folgenden Format – ohne zusätzliche Erklärungen:`,
+            commentHint: '[optionaler Kommentar auf Deutsch]',
+            msgHint: '[Nachricht]', replyHint: '[Antwort]'
+        },
+        en: {
+            dateWord: 'TODAY',
+            intro: (topic, level, participants, count) =>
+                `Create a chat history in English (CEFR level: ${level}) on the topic "${topic}".\n` +
+                `The participants are: ${participants}.\n` +
+                `The chat should contain approximately ${count} messages.\n\n` +
+                `Reply ONLY with the chat text in the following format – without any additional explanations:`,
+            commentHint: '[optional comment in English]',
+            msgHint: '[message]', replyHint: '[reply]'
+        },
+        fr: {
+            dateWord: "AUJOURD'HUI",
+            intro: (topic, level, participants, count) =>
+                `Crée un historique de chat en français (niveau CECRL\u00a0: ${level}) sur le sujet « ${topic} ».\n` +
+                `Les participants sont\u00a0: ${participants}.\n` +
+                `Le chat doit contenir environ ${count} messages.\n\n` +
+                `Réponds UNIQUEMENT avec le texte du chat dans le format suivant – sans explications supplémentaires\u00a0:`,
+            commentHint: '[commentaire optionnel en français]',
+            msgHint: '[message]', replyHint: '[réponse]'
+        },
+        es: {
+            dateWord: 'HOY',
+            intro: (topic, level, participants, count) =>
+                `Crea un historial de chat en español (nivel MCER: ${level}) sobre el tema «${topic}».\n` +
+                `Los participantes son: ${participants}.\n` +
+                `El chat debe contener aproximadamente ${count} mensajes.\n\n` +
+                `Responde ÚNICAMENTE con el texto del chat en el siguiente formato – sin explicaciones adicionales:`,
+            commentHint: '[comentario opcional en español]',
+            msgHint: '[mensaje]', replyHint: '[respuesta]'
+        }
+    };
+
+    function openPromptGenerator() {
+        const modal = document.getElementById('prompt-gen-modal');
+        modal.style.display = 'flex';
+        document.getElementById('pg-output').style.display = 'none';
+        const onEsc = (e) => { if (e.key === 'Escape') { closePromptGenerator(); document.removeEventListener('keydown', onEsc); } };
+        document.addEventListener('keydown', onEsc);
+    }
+
+    function closePromptGenerator() {
+        document.getElementById('prompt-gen-modal').style.display = 'none';
+    }
+
+    function generateLLMPrompt() {
+        const participants = document.getElementById('pg-participants').value
+            .split('\n').map(s => s.trim()).filter(Boolean);
+        const topic = document.getElementById('pg-topic').value.trim();
+        const lang = document.getElementById('pg-language').value;
+        const level = document.getElementById('pg-level').value;
+        const count = parseInt(document.getElementById('pg-msg-count').value, 10) || 10;
+        const format = document.querySelector('input[name="pg-format"]:checked').value;
+
+        if (!topic) { showToast('Bitte ein Thema eingeben.', 'error'); return; }
+        if (participants.length < 1) { showToast('Bitte mindestens einen Teilnehmer eingeben.', 'error'); return; }
+
+        const ld = LANG_DATA[lang];
+        const participantsStr = participants.join(', ');
+        const intro = ld.intro(topic, level, participantsStr, count);
+        const p1 = participants[0] || 'Person1';
+        const p2 = participants[1] || participants[0] || 'Person2';
+
+        let formatBlock;
+        if (format === 'txt') {
+            const userLines = participants.map(n => `USER: ${n}`).join('\n');
+            formatBlock =
+                `TITLE: ${topic}\n` +
+                `${userLines}\n` +
+                `--- ${ld.dateWord} ---\n` +
+                `${p1}: ${ld.msgHint}\n` +
+                `${p2}: ${ld.replyHint}\n` +
+                `COMMENT: ${ld.commentHint}`;
+        } else {
+            const usersJson = JSON.stringify(participants);
+            formatBlock =
+                `{\n` +
+                `  "title": "${topic.replace(/"/g, '\\"')}",\n` +
+                `  "users": ${usersJson},\n` +
+                `  "items": [\n` +
+                `    {"type": "date", "text": "${ld.dateWord}"},\n` +
+                `    {"type": "text", "from": "${p1}", "text": "${ld.msgHint}"},\n` +
+                `    {"type": "text", "from": "${p2}", "text": "${ld.replyHint}"},\n` +
+                `    {"type": "comment", "text": "${ld.commentHint}"}\n` +
+                `  ]\n` +
+                `}`;
+        }
+
+        const prompt = `${intro}\n\n${formatBlock}`;
+        const output = document.getElementById('pg-output');
+        document.getElementById('pg-prompt-text').value = prompt;
+        output.style.display = 'flex';
+        output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function copyPromptToClipboard() {
+        const text = document.getElementById('pg-prompt-text').value;
+        if (!text) return;
+        navigator.clipboard.writeText(text)
+            .then(() => showToast('Prompt in Zwischenablage kopiert!', 'success'))
+            .catch(() => { showToast('Kopieren fehlgeschlagen.', 'error'); });
+    }
+
     init();
 })();
 </script>
+
+<!-- ===================== Prompt-Generator Modal ===================== -->
+<div id="prompt-gen-modal" class="modal-overlay" style="display:none;" aria-modal="true" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3>🤖 LLM-Prompt Generator</h3>
+            <button id="close-prompt-gen-btn" class="modal-close-btn" title="Schließen">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="pg-participants">Chatteilnehmer (ein Name pro Zeile)</label>
+                <textarea id="pg-participants" rows="3" placeholder="Anna&#10;Bob"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="pg-topic">Thema</label>
+                <input type="text" id="pg-topic" placeholder="z.B. Urlaub planen">
+            </div>
+            <div class="form-group">
+                <label for="pg-language">Sprache</label>
+                <select id="pg-language">
+                    <option value="de">Deutsch</option>
+                    <option value="en">Englisch</option>
+                    <option value="fr">Französisch</option>
+                    <option value="es">Spanisch</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="pg-level">Sprachniveau (GER/CEFR)</label>
+                <select id="pg-level">
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1" selected>B1</option>
+                    <option value="B2">B2</option>
+                    <option value="C1">C1</option>
+                    <option value="C2">C2</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="pg-msg-count">Anzahl Nachrichten (ca.)</label>
+                <input type="number" id="pg-msg-count" min="2" max="100" value="10">
+            </div>
+            <div class="form-group">
+                <label>Format</label>
+                <div class="pg-format-group">
+                    <label><input type="radio" name="pg-format" value="txt" checked> TXT</label>
+                    <label><input type="radio" name="pg-format" value="json"> JSON</label>
+                </div>
+            </div>
+            <button id="pg-generate-btn" class="primary-btn">Prompt erstellen</button>
+            <div id="pg-output" style="display:none;">
+                <label for="pg-prompt-text">Generierter Prompt:</label>
+                <textarea id="pg-prompt-text" rows="12" readonly></textarea>
+                <button id="pg-copy-btn" class="secondary-btn">📋 In Zwischenablage kopieren</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
